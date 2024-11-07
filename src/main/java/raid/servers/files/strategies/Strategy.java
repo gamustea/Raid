@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static java.lang.Thread.sleep;
+
 public abstract class Strategy {
     protected ConnectionTest connectionTestLeft;
     protected ConnectionTest connectionTestRight;
@@ -91,8 +93,16 @@ public abstract class Strategy {
         return "SAVED";
     }
 
-    public String selfDeleteFile(String file) {
-        return null;
+    public String selfDeleteFile(String fileName) {
+        File fileToDelete = new File(fileName);
+        if (fileToDelete.exists()) {
+            fileToDelete.delete();
+        }
+        else {
+            return "| ERROR FILE DOES NOT EXIST |";
+        }
+
+        return "| FILE SUCCESSFULLY DELETED |";
     }
 
     public File selfGetFile(String file, Socket clientSocket) {
@@ -166,4 +176,27 @@ public abstract class Strategy {
 
         return result;
     }
+
+    protected void waitForConnection() {
+        while (!connectionTestLeft.isConnectionAvailable() || !connectionTestRight.isConnectionAvailable()) {
+            System.out.println("PERIPHERAL SERVERS ARE NOT UP");
+            try {
+                sleep(500);
+            }
+            catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    protected void bootConnections() {
+        if (!connectionTestLeft.isAlive()) {
+            connectionTestLeft.start();
+        }
+        if (!connectionTestRight.isAlive()) {
+            connectionTestRight.start();
+        }
+    }
+
+
 }

@@ -51,28 +51,15 @@ public class LocalCommunication extends Thread {
                     e.printStackTrace();
                 }
                 finally {
-                    if (s != null) {
-                        try {
-                            s.close();
-                        }
-                        catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    Server.closeResource(s);
                 }
             }
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new RuntimeException(e);
         }
         finally {
-            if (ss != null) {
-                try {
-                    ss.close();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            Server.closeResource(ss);
         }
     }
 }

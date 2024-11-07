@@ -1,9 +1,16 @@
 package raid.servers;
 
+import raid.servers.files.strategies.FullSavingStrategy;
 import raid.servers.files.strategies.PartialSavingStrategy;
 
 import static raid.servers.files.strategies.StrategyType.East;
 
+/**
+ * Instance of {@link Server}. Follows a {@link PartialSavingStrategy},
+ * and it's meant to treat files as a partial block, so that it stores half of the
+ * file. It'll communicate
+ * with the peripheral {@code Servers} (West and Central Servers).
+ */
 public class EastServer extends Server {
     public EastServer() {
         testPort = 55552;

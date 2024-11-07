@@ -4,6 +4,12 @@ import raid.servers.files.strategies.PartialSavingStrategy;
 
 import static raid.servers.files.strategies.StrategyType.West;
 
+/**
+ * Instance of {@link Server}. Follows a {@link PartialSavingStrategy},
+ * and it's meant to treat files as a partial block, so that it stores half of the
+ * file. It'll communicate
+ * with the peripheral {@code Servers} (West and Central Servers).
+ */
 public class WestServer extends Server {
     public WestServer() {
         testPort = 55550;

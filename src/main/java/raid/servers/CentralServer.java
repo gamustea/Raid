@@ -2,6 +2,11 @@ package raid.servers;
 
 import raid.servers.files.strategies.FullSavingStrategy;
 
+/**
+ * Instance of {@link Server}. Follows a {@link FullSavingStrategy},
+ * and it's meant to treat files as a full block. It'll communicate
+ * with the peripheral {@code Servers} (West and East Servers).
+ */
 public class CentralServer extends Server {
     public CentralServer() {
         host = "localhost";

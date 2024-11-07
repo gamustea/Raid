@@ -1,5 +1,7 @@
 package raid.servers.threads;
 
+import raid.servers.Server;
+
 import javax.imageio.IIOException;
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -17,7 +19,7 @@ public class HearingThread extends Thread{
 
         try {
             ss = new ServerSocket(port);
-            while (super.isAlive()) {
+            while (isAlive()) {
                 try {
                     ss.accept();
                 }
@@ -30,14 +32,7 @@ public class HearingThread extends Thread{
             e.printStackTrace();
         }
         finally {
-            if (ss != null) {
-                try {
-                    ss.close();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            Server.closeResource(ss);
         }
     }
 }

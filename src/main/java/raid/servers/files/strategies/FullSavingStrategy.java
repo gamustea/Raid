@@ -21,24 +21,8 @@ public class FullSavingStrategy extends Strategy {
         Socket westServerSocket = null;
         Socket eastServerSocket = null;
 
-        if (!connectionTestLeft.isAlive()) {
-            connectionTestLeft.start();
-        }
-        if (!connectionTestRight.isAlive()) {
-            connectionTestRight.start();
-        }
-
-        while (!connectionTestLeft.isConnectionAvailable() || !connectionTestRight.isConnectionAvailable()) {
-            System.out.println("PERIPHERAL SERVERS ARE NOT UP");
-            try {
-                sleep(500);
-            }
-            catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        selfSaveFile(file);
+        bootConnections();
+        waitForConnection();
 
         try {
             westServerSocket = new Socket(Server.WEST_HOST, Strategy.WEST_LOCAL_CONNECTION_PORT);
@@ -75,6 +59,7 @@ public class FullSavingStrategy extends Strategy {
         }
         catch (IOException e) {
             e.printStackTrace();
+            return "| ERROR WHILE STORAGING |";
         }
         finally {
             connectionTestLeft.interrupt();
@@ -95,13 +80,20 @@ public class FullSavingStrategy extends Strategy {
                 }
             }
         }
+        selfSaveFile(file);
 
         return "| FILE SAVED |";
     }
 
     @Override
-    public String deleteFile(String file) {
-        return "";
+    public String deleteFile(String fileName) {
+
+        waitForConnection();
+
+
+
+        selfDeleteFile(fileName);
+        return "| FILE COMPLETELY DELETED |";
     }
 
     @Override

@@ -104,13 +104,7 @@ public class ClientManager extends Thread {
         }
         finally {
             System.out.println("| Client closed |");
-            if (clientSocket != null) {
-                try {
-                    clientSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            Server.closeResource(clientSocket);
         }
     }
 }
