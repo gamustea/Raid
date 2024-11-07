@@ -93,9 +93,9 @@ public class ClientManager extends Thread {
                         break;
                     }
                 }
-                oos.writeBytes(message);
-                oos.flush();
 
+                oos.writeObject(message);
+                oos.flush();
                 command = ois.readInt();
             }
         }

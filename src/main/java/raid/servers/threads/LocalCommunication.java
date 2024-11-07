@@ -1,7 +1,7 @@
 package raid.servers.threads;
 
-import raid.servers.Server;
-import raid.servers.files.strategies.Strategy;
+import raid.servers.*;
+import raid.servers.files.strategies.*;
 
 import java.io.*;
 import java.net.ServerSocket;

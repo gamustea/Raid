@@ -22,13 +22,13 @@ public class Client {
     public void boot() {
         Socket s = null;
         try {
-            s = new Socket(host, port);
             System.out.println("Starting connection");
+            s = new Socket(host, port);
+            System.out.println("| Connection successful |");
 
             ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
             ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
 
-            System.out.println("| Connection successful |");
             Result<Integer, String> result = getCommand();
 
             int command = result.getResult1();
@@ -40,19 +40,7 @@ public class Client {
             while (command != Server.CLOSE_CONNECTION) {
 
                 // Gestión del resultado obtenido del comando
-                switch (command) {
-                    case Server.GET_FILE, Server.DELETE_FILE: {
-                        oos.writeObject(fileName);
-                        oos.flush();
-                        break;
-                    }
-                    case Server.SAVE_FILE: {
-                        oos.writeObject(new File(fileName));
-                        oos.flush();
-                        break;
-                    }
-                }
-                String message = ois.readLine();
+                String message = manageCommand(command, fileName, oos, ois);
                 System.out.println(message);
 
                 // Petición de siguiente comando
@@ -65,7 +53,7 @@ public class Client {
                 oos.flush();
             }
         }
-        catch (IOException e) {
+        catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         finally {
@@ -145,5 +133,22 @@ public class Client {
         }
 
         return result;
+    }
+
+    private static String manageCommand(int command, String fileName, ObjectOutputStream oos, ObjectInputStream ois) throws IOException, ClassNotFoundException {
+        switch (command) {
+            case Server.GET_FILE, Server.DELETE_FILE: {
+                oos.writeObject(fileName);
+                oos.flush();
+                break;
+            }
+            case Server.SAVE_FILE: {
+                oos.writeObject(new File(fileName));
+                oos.flush();
+                break;
+            }
+        }
+
+        return (String) ois.readObject();
     }
 }
