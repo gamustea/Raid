@@ -6,7 +6,6 @@ import raid.servers.threads.ConnectionTest;
 import returning.Result;
 
 import java.io.*;
-import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,7 +23,7 @@ public abstract class Strategy {
 
     public abstract String saveFile(File file);
     public abstract String deleteFile(String file);
-    public abstract String getFile(String file, Socket clientSocket);
+    public abstract String getFile(String file);
 
     protected Strategy(String pathName, StrategyType strategyType) {
         this.path = Path.of(pathName);
@@ -72,40 +71,26 @@ public abstract class Strategy {
             e.printStackTrace();
         }
         finally {
-            if (bis != null) {
-                try {
-                    bis.close();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (bos != null) {
-                try {
-                    bos.close();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            Server.closeResource(bis);
+            Server.closeResource(bos);
         }
 
         return "SAVED";
     }
 
     public String selfDeleteFile(String fileName) {
-        File fileToDelete = new File(fileName);
+        String realFileName = path + "\\" + fileName;
+        File fileToDelete = new File(realFileName);
+
         if (fileToDelete.exists()) {
             fileToDelete.delete();
-        }
-        else {
-            return "| ERROR FILE DOES NOT EXIST |";
+            return "| FILE SUCCESSFULLY DELETED |";
         }
 
-        return "| FILE SUCCESSFULLY DELETED |";
+        return "| ERROR FILE NOT FOUND |";
     }
 
-    public File selfGetFile(String file, Socket clientSocket) {
+    public String selfGetFile(String file) {
         return null;
     }
 
@@ -197,6 +182,4 @@ public abstract class Strategy {
             connectionTestRight.start();
         }
     }
-
-
 }

@@ -1,7 +1,6 @@
 package raid.servers.files.strategies;
 
 import java.io.File;
-import java.net.Socket;
 
 public class PartialSavingStrategy extends Strategy {
     public PartialSavingStrategy(String path, StrategyType strategyType) {
@@ -19,7 +18,7 @@ public class PartialSavingStrategy extends Strategy {
     }
 
     @Override
-    public String getFile(String file, Socket clientSocket) {
+    public String getFile(String file) {
         return null;
     }
 }

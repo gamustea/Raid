@@ -31,20 +31,20 @@ public class LocalCommunication extends Thread {
                     ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
 
                     int command = ois.readInt();
+                    String message = null;
                     if (command == Server.SAVE_FILE) {
                         File file = (File) ois.readObject();
-                        strategy.selfSaveFile(file);
-                        oos.writeBytes("SAVE COMPLETED");
+                        message = strategy.selfSaveFile(file);
                     }
                     if (command == Server.GET_FILE) {
                         String fileName = (String) ois.readObject();
-                        oos.writeObject(strategy.selfGetFile(fileName, clientSocket));
+                        message = strategy.selfGetFile(fileName);
                     }
                     if (command == Server.DELETE_FILE) {
                         String fileName = (String) ois.readObject();
-                        strategy.selfDeleteFile(fileName);
-                        oos.writeObject("DELETED COMPLETED");
+                        message = strategy.selfDeleteFile(fileName);
                     }
+                    oos.writeObject(message);
                     oos.flush();
                 }
                 catch (ClassNotFoundException | IOException e) {

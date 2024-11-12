@@ -74,17 +74,21 @@ public class Client {
         Scanner scanner = new Scanner(System.in);
 
         boolean commandNotValid = true;
-        boolean fileNotExists = true;
 
-        while (commandNotValid && fileNotExists) {
+        while (commandNotValid) {
             System.out.print("--> ");
             String command = scanner.nextLine();
 
+            // Si el comando es Close, sale directamente
             if (command.equalsIgnoreCase("close")) {
                 return new Result<>(Server.CLOSE_CONNECTION, null);
             }
 
+            // Divide el contenido de la String
             String[] parts = command.split(" ");
+
+            // Si no ha escrito justamente dos palabras,
+            // el comando no es válido
             if (parts.length != 2) {
                 System.out.println("| COMMAND NOT VALID |");
             }
@@ -94,7 +98,6 @@ public class Client {
 
                 File file = new File(fileName);
 
-                fileNotExists = false;
                 switch (order) {
                     case "GET":
                     case "Get":
@@ -111,23 +114,16 @@ public class Client {
                         }
                         else {
                             System.out.println("File not exists");
-                            fileNotExists = true;
                         }
                         break;
                     case "Delete":
                     case "DELETE":
                     case "delete":
-                        if (file.exists()) {
-                            result = new Result<>(Server.DELETE_FILE, fileName);
-                            commandNotValid = false;
-                        }
-                        else {
-                            System.out.println("File not exists");
-                        }
+                        result = new Result<>(Server.DELETE_FILE, fileName);
+                        commandNotValid = false;
                         break;
                     default:
                         System.out.println("| NOT VALID COMMAND |");
-                        fileNotExists = true;
                 }
             }
         }

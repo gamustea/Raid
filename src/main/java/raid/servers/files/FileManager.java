@@ -21,7 +21,7 @@ public class FileManager{
     }
 
     public String getFile(String name, Socket clientSocket) {
-        return strategy.getFile(name, clientSocket);
+        return strategy.getFile(name);
     }
 
     public void setStrategy(Strategy strategy) {
