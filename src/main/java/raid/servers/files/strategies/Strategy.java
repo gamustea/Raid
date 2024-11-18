@@ -2,7 +2,7 @@ package raid.servers.files.strategies;
 
 import raid.servers.Server;
 import raid.servers.WestServer;
-import raid.servers.threads.ConnectionTest;
+import raid.threads.testers.ConnectionTestThread;
 import returning.Result;
 
 import java.io.*;
@@ -15,14 +15,17 @@ import java.util.Properties;
 import static java.lang.Thread.sleep;
 
 public abstract class Strategy {
-    protected ConnectionTest connectionTestLeft;
-    protected ConnectionTest connectionTestRight;
+    protected ConnectionTestThread connectionTestLeft;
+    protected ConnectionTestThread connectionTestRight;
     protected Path path;
     protected StrategyType strategyType;
 
-    protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT"));
-    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT"));
-    protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT"));
+    protected final static String HOSTS = "/hosts.properties";
+    protected final static String PORTS = "/ports.properties";
+
+    protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT", PORTS));
+    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT", PORTS));
+    protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT", PORTS));
 
     public abstract String saveFile(File file);
     public abstract String deleteFile(String file);
@@ -30,38 +33,33 @@ public abstract class Strategy {
 
     protected Strategy(String pathName, StrategyType strategyType) {
         path = Path.of(pathName);
+        checkPathExistence(path);
+
         this.strategyType = strategyType;
 
         switch (strategyType) {
             case StrategyType.Central: {
-                this.connectionTestLeft = new ConnectionTest(Server.WEST_TEST_PORT, Server.WEST_HOST);
-                this.connectionTestRight = new ConnectionTest(Server.EAST_TEST_PORT, Server.EAST_HOST);
+                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
+                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
                 break;
             }
             case StrategyType.East: {
-                this.connectionTestLeft = new ConnectionTest(Server.WEST_TEST_PORT, Server.WEST_HOST);
-                this.connectionTestRight = new ConnectionTest(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
+                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
+                this.connectionTestRight = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
             }
             case StrategyType.West: {
-                this.connectionTestLeft = new ConnectionTest(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
-                this.connectionTestRight = new ConnectionTest(Server.EAST_TEST_PORT, Server.EAST_HOST);
+                this.connectionTestLeft = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
+                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
                 break;
             }
         }
-
-        try {
-            Files.createDirectory(Paths.get(pathName));
-        }
-        catch (IOException e) {
-            e.getMessage();
-        }
     }
 
-    private static String getProperty(String clave) {
+    private static String getProperty(String clave, String propertiesFile) {
         String valor = null;
         try {
             Properties props = new Properties();
-            InputStream prIS = Server.class.getResourceAsStream("/localPorts.properties");
+            InputStream prIS = Server.class.getResourceAsStream(propertiesFile);
             props.load(prIS);
             valor = props.getProperty(clave);
         } catch (IOException ex) {
@@ -128,7 +126,7 @@ public abstract class Strategy {
         return null;
     }
 
-    // ====================== AUXILIAR METHODS =======================
+    // ====================== AUXILIARY METHODS =======================
 
     /**
      * Given a certain file, splits it in half and returns it as two new Files,
@@ -239,7 +237,7 @@ public abstract class Strategy {
 
 
     /**
-     * Starts {@link ConnectionTest} instances of this specific {@link Server}
+     * Starts {@link ConnectionTestThread} instances of this specific {@link Server}
      * instance.
      */
     protected void bootConnections() {
@@ -278,5 +276,16 @@ public abstract class Strategy {
         oos.flush();
 
         return (String) ois.readObject();
+    }
+
+
+    protected static void checkPathExistence(Path path) {
+        try {
+            if (!Files.exists(path)) {
+                Files.createDirectory(path);
+            }
+        } catch (IOException e) {
+            System.out.println("Error while creating " + path);
+        }
     }
 }

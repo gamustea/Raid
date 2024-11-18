@@ -1,9 +1,9 @@
 package raid.servers;
 
-import raid.servers.threads.ClientManager;
+import raid.threads.ClientManagerThread;
 import raid.servers.files.strategies.Strategy;
-import raid.servers.threads.HearingThread;
-import raid.servers.threads.LocalCommunication;
+import raid.threads.testers.HearingThread;
+import raid.threads.localCommunication.LocalHearerThread;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -14,7 +14,7 @@ import java.util.Properties;
  * Abstraction of a Server, that's meant to run and retrieve clients'
  * commands related to {@link File} objects: storing, storaging or deleting
  * them from the memory of the current Server, in a concurrent way. It uses
- * a {@link ClientManager} to achieve so.
+ * a {@link ClientManagerThread} to achieve so.
  * This server can be built in three different ways:
  * <ul>
  *     <li>{@link CentralServer}</li>
@@ -61,24 +61,26 @@ public abstract class Server {
     public static final int SAVE_FILE = 2;
     public static final int DELETE_FILE = 3;
     public static final int CLOSE_CONNECTION = 4;
+    protected final static String HOSTS = "/hosts.properties";
+    protected final static String PORTS = "/ports.properties";
 
-    public static final int WEST_TEST_PORT = Integer.parseInt(getProperty("WEST_TEST_PORT"));
-    public static final int CENTRAL_TEST_PORT = Integer.parseInt(getProperty("CENTRAL_TEST_PORT"));
-    public static final int EAST_TEST_PORT = Integer.parseInt(getProperty("EAST_TEST_PORT"));
+    public static final int WEST_TEST_PORT = Integer.parseInt(getProperty("WEST_TEST_PORT", PORTS));
+    public static final int CENTRAL_TEST_PORT = Integer.parseInt(getProperty("CENTRAL_TEST_PORT", PORTS));
+    public static final int EAST_TEST_PORT = Integer.parseInt(getProperty("EAST_TEST_PORT", PORTS));
 
-    public static final int WEST_CLIENT_PORT = Integer.parseInt(getProperty("WEST_CLIENT_PORT"));
-    public static final int CENTRAL_CLIENT_PORT = Integer.parseInt(getProperty("CENTRAL_CLIENT_PORT"));
-    public static final int EAST_CLIENT_PORT = Integer.parseInt(getProperty("EAST_CLIENT_PORT"));
+    public static final int WEST_CLIENT_PORT = Integer.parseInt(getProperty("WEST_CLIENT_PORT", PORTS));
+    public static final int CENTRAL_CLIENT_PORT = Integer.parseInt(getProperty("CENTRAL_CLIENT_PORT", PORTS));
+    public static final int EAST_CLIENT_PORT = Integer.parseInt(getProperty("EAST_CLIENT_PORT", PORTS));
 
-    public static final String WEST_HOST = getProperty("WEST_HOST");
-    public static final String CENTRAL_HOST = getProperty("CENTRAL_HOST");
-    public static final String EAST_HOST = getProperty("EAST_HOST");
+    public static final String WEST_HOST = getProperty("WEST_HOST", HOSTS);
+    public static final String CENTRAL_HOST = getProperty("CENTRAL_HOST", HOSTS);
+    public static final String EAST_HOST = getProperty("EAST_HOST", HOSTS);
 
-    private static String getProperty(String clave) {
+    private static String getProperty(String clave, String propertiesFile) {
         String valor = null;
         try {
             Properties props = new Properties();
-            InputStream prIS = Server.class.getResourceAsStream("/ports.properties");
+            InputStream prIS = Server.class.getResourceAsStream(propertiesFile);
             props.load(prIS);
             valor = props.getProperty(clave);
         } catch (IOException ex) {
@@ -97,8 +99,8 @@ public abstract class Server {
     public void boot() {
         ServerSocket serverSocket = null;
 
-        LocalCommunication localCommunication = null;
-        ClientManager clientManager = null;
+        LocalHearerThread localCommunication = null;
+        ClientManagerThread clientManager = null;
         HearingThread hearingThread = null;
 
         try {
@@ -106,7 +108,7 @@ public abstract class Server {
             System.out.println("| SERVER IS UP |");
 
             hearingThread = new HearingThread(testPort);
-            localCommunication = new LocalCommunication(localCommunicationPort, strategy);
+            localCommunication = new LocalHearerThread(localCommunicationPort, strategy);
 
             hearingThread.start();
             localCommunication.start();
@@ -115,7 +117,7 @@ public abstract class Server {
                 try {
                     // Crear lo threads que van a gestionar la llegada de clientes
                     // y las peticiones de parte de otros servidores
-                    clientManager = new ClientManager(serverSocket.accept(), strategy);
+                    clientManager = new ClientManagerThread(serverSocket.accept(), strategy);
                     clientManager.start();
                 }
                 catch (IOException e) {

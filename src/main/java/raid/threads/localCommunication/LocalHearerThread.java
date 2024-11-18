@@ -1,4 +1,4 @@
-package raid.servers.threads;
+package raid.threads.localCommunication;
 
 import raid.servers.*;
 import raid.servers.files.strategies.*;
@@ -7,12 +7,12 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class LocalCommunication extends Thread {
+public class LocalHearerThread extends Thread {
     private final int port;
     private final Strategy strategy;
     private Socket clientSocket;
 
-    public LocalCommunication(int port, Strategy strategy) {
+    public LocalHearerThread(int port, Strategy strategy) {
         this.port = port;
         this.strategy = strategy;
     }
