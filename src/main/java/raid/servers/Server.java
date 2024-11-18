@@ -7,6 +7,7 @@ import raid.servers.threads.LocalCommunication;
 
 import java.io.*;
 import java.net.ServerSocket;
+import java.util.Properties;
 
 /**
  * <p>
@@ -61,17 +62,30 @@ public abstract class Server {
     public static final int DELETE_FILE = 3;
     public static final int CLOSE_CONNECTION = 4;
 
-    public static final int WEST_TEST_PORT = 55550;
-    public static final int CENTRAL_TEST_PORT = 55551;
-    public static final int EAST_TEST_PORT = 55552;
+    public static final int WEST_TEST_PORT = Integer.parseInt(getProperty("WEST_TEST_PORT"));
+    public static final int CENTRAL_TEST_PORT = Integer.parseInt(getProperty("CENTRAL_TEST_PORT"));
+    public static final int EAST_TEST_PORT = Integer.parseInt(getProperty("EAST_TEST_PORT"));
 
-    public static final int WEST_CLIENT_PORT = 55553;
-    public static final int CENTRAL_CLIENT_PORT = 55554;
-    public static final int EAST_CLIENT_PORT = 55555;
+    public static final int WEST_CLIENT_PORT = Integer.parseInt(getProperty("WEST_CLIENT_PORT"));
+    public static final int CENTRAL_CLIENT_PORT = Integer.parseInt(getProperty("CENTRAL_CLIENT_PORT"));
+    public static final int EAST_CLIENT_PORT = Integer.parseInt(getProperty("EAST_CLIENT_PORT"));
 
-    public static final String WEST_HOST = "localhost";
-    public static final String CENTRAL_HOST = "localhost";
-    public static final String EAST_HOST = "localhost";
+    public static final String WEST_HOST = getProperty("WEST_HOST");
+    public static final String CENTRAL_HOST = getProperty("CENTRAL_HOST");
+    public static final String EAST_HOST = getProperty("EAST_HOST");
+
+    private static String getProperty(String clave) {
+        String valor = null;
+        try {
+            Properties props = new Properties();
+            InputStream prIS = Server.class.getResourceAsStream("/ports.properties");
+            props.load(prIS);
+            valor = props.getProperty(clave);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return valor;
+    }
 
     /**
      * Starts up this {@link Server} instance. It makes it wait for clients

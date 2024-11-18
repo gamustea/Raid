@@ -3,7 +3,7 @@ package executables;
 import raid.servers.Server;
 
 public class ServerExecution extends Thread {
-    private Server server;
+    private final Server server;
 
     public ServerExecution(Server server) {
         this.server = server;

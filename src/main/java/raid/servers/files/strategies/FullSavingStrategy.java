@@ -1,15 +1,11 @@
 package raid.servers.files.strategies;
 
-import raid.servers.EastServer;
 import raid.servers.Server;
-import raid.servers.WestServer;
+import raid.servers.threads.FileSenderThread;
 import returning.Result;
 
 import java.io.*;
 import java.net.Socket;
-
-
-import static java.lang.Thread.sleep;
 
 public class FullSavingStrategy extends Strategy {
     public FullSavingStrategy(String path) {
@@ -24,42 +20,32 @@ public class FullSavingStrategy extends Strategy {
         Socket eastServerSocket = null;
 
         bootConnections();
-        waitForConnection();
+        waitForConnections();
 
         try {
             westServerSocket = new Socket(Server.WEST_HOST, Strategy.WEST_LOCAL_CONNECTION_PORT);
             eastServerSocket = new Socket(Server.EAST_HOST, Strategy.EAST_LOCAL_CONNECTION_PORT);
+
+            Result<String, String> fileParts = getFileNameAndExtension(file);
             Result<File, File> result = splitFile(
                     file,
-                    file.getName() + "_1",
-                    file.getName() + "_2"
+                    fileParts.getResult1() + "_1." + fileParts.getResult2(),
+                    fileParts.getResult1() + "_2." + fileParts.getResult2()
             );
 
-            // Crear los streams para el primer servidor parcial
-            ObjectOutputStream oos = new ObjectOutputStream(westServerSocket.getOutputStream());
-            ObjectInputStream ois = new ObjectInputStream(westServerSocket. getInputStream());
+            FileSenderThread f1 = new FileSenderThread(westServerSocket, result.getResult1(), Server.SAVE_FILE);
+            FileSenderThread f2 = new FileSenderThread(eastServerSocket, result.getResult2(), Server.SAVE_FILE);
 
-            // Pedirle al primer servidor que guarde la primera mitad
-            // del fichero y recibir un mensaje
-            oos.writeInt(WestServer.SAVE_FILE);
-            oos.flush();
-            oos.writeObject(result.getResult1());
-            oos.flush();
-            System.out.println(ois.readLine());
+            f1.start();
+            f2.start();
 
-            // Crear los streams para el segundo servidor parcial
-            oos = new ObjectOutputStream(eastServerSocket.getOutputStream());
-            ois = new ObjectInputStream(eastServerSocket. getInputStream());
+            f1.join();
+            f2.join();
 
-            // Pedirle al segundo servidor que guarde la segunda mitad
-            // del fichero y recibir un mensaje
-            oos.writeInt(EastServer.SAVE_FILE);
-            oos.flush();
-            oos.writeObject(result.getResult2());
-            oos.flush();
-            System.out.println(ois.readLine());
+            System.out.println(f1.getResult());
+            System.out.println(f2.getResult());
         }
-        catch (IOException e) {
+        catch (IOException | InterruptedException e) {
             return "| ERROR WHILE STORAGING |";
         }
         finally {
@@ -79,7 +65,7 @@ public class FullSavingStrategy extends Strategy {
         System.out.println("| STARTING TO DELETE " + fileName + " |\n");
 
         bootConnections();
-        waitForConnection();
+        waitForConnections();
 
         String finalMessage = selfDeleteFile(fileName);
 
@@ -90,36 +76,26 @@ public class FullSavingStrategy extends Strategy {
             try {
                 westServerSocket = new Socket(Server.WEST_HOST, Strategy.WEST_LOCAL_CONNECTION_PORT);
                 eastServerSocket = new Socket(Server.EAST_HOST, Strategy.EAST_LOCAL_CONNECTION_PORT);
-                String fileName1 = fileName + "_1";
-                String fileName2 = fileName + "_2";
 
-                // Crear los streams para el primer servidor parcial
-                ObjectOutputStream oos = new ObjectOutputStream(westServerSocket.getOutputStream());
-                ObjectInputStream ois = new ObjectInputStream(westServerSocket. getInputStream());
+                Result<String, String> result = getFileNameAndExtension(fileName);
 
-                // Pedirle al primer servidor que borre la primera mitad
-                // del fichero y recibir un mensaje
-                oos.writeInt(WestServer.DELETE_FILE);
-                oos.flush();
-                oos.writeObject(fileName1);
-                oos.flush();
-                System.out.println((String) ois.readObject());
+                String fileName1 = result.getResult1() + "_1." + result.getResult2();
+                String fileName2 = result.getResult1() + "_2." + result.getResult2();
 
-                // Crear los streams para el segundo servidor parcial
-                oos = new ObjectOutputStream(eastServerSocket.getOutputStream());
-                ois = new ObjectInputStream(eastServerSocket. getInputStream());
+                FileSenderThread f1 = new FileSenderThread(westServerSocket, fileName1, Server.DELETE_FILE);
+                FileSenderThread f2 = new FileSenderThread(eastServerSocket, fileName2, Server.DELETE_FILE);
 
-                // Pedirle al segundo servidor que borre la segunda mitad
-                // del fichero y recibir un mensaje
-                oos.writeInt(EastServer.DELETE_FILE);
-                oos.flush();
-                oos.writeObject(fileName2);
-                oos.flush();
-                System.out.println((String) ois.readObject());
+                f1.start();
+                f2.start();
+                f1.join();
+                f2.join();
+
+                System.out.println(f1.getResult());
+                System.out.println(f2.getResult());
 
                 finalMessage = "| FILE COMPLETELY DELETED |";
             }
-            catch (ClassNotFoundException | IOException e) {
+            catch (IOException | InterruptedException e) {
                 return "| ERROR WHILE STORAGING |";
             }
             finally {

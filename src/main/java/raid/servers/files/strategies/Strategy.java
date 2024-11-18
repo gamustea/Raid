@@ -6,9 +6,11 @@ import raid.servers.threads.ConnectionTest;
 import returning.Result;
 
 import java.io.*;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 
 import static java.lang.Thread.sleep;
 
@@ -16,17 +18,20 @@ public abstract class Strategy {
     protected ConnectionTest connectionTestLeft;
     protected ConnectionTest connectionTestRight;
     protected Path path;
+    protected StrategyType strategyType;
 
-    protected final static int WEST_LOCAL_CONNECTION_PORT = 55556;
-    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = 55557;
-    protected final static int EAST_LOCAL_CONNECTION_PORT = 55558;
+    protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT"));
+    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT"));
+    protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT"));
 
     public abstract String saveFile(File file);
     public abstract String deleteFile(String file);
     public abstract String getFile(String file);
 
     protected Strategy(String pathName, StrategyType strategyType) {
-        this.path = Path.of(pathName);
+        path = Path.of(pathName);
+        this.strategyType = strategyType;
+
         switch (strategyType) {
             case StrategyType.Central: {
                 this.connectionTestLeft = new ConnectionTest(Server.WEST_TEST_PORT, Server.WEST_HOST);
@@ -52,8 +57,29 @@ public abstract class Strategy {
         }
     }
 
+    private static String getProperty(String clave) {
+        String valor = null;
+        try {
+            Properties props = new Properties();
+            InputStream prIS = Server.class.getResourceAsStream("/localPorts.properties");
+            props.load(prIS);
+            valor = props.getProperty(clave);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return valor;
+    }
+
+    /**
+     * Method that allows a {@link Server} instance to save a given {@link File}
+     * in its file storaging path.
+     * @param file {@link File} to store
+     * @return "SAVED" if the file was successfully stored
+     */
     public String selfSaveFile(File file) {
-        File storedFile = new File(path + "\\" + file.getName());
+        File storedFile = new File(path +
+                "\\" +
+                file.getName());
         byte[] buffer = new byte[(int) (file.length() - 1)];
 
         BufferedInputStream bis = null;
@@ -78,13 +104,21 @@ public abstract class Strategy {
         return "SAVED";
     }
 
+    /**
+     * Method that allows a {@link Server} instance to remove a given {@link File}
+     * from its file storaging path.
+     * @param fileName Name of the file to delete
+     * @return "DELETED" if the file was successfully stored
+     */
     public String selfDeleteFile(String fileName) {
         String realFileName = path + "\\" + fileName;
         File fileToDelete = new File(realFileName);
 
         if (fileToDelete.exists()) {
-            fileToDelete.delete();
-            return "| FILE SUCCESSFULLY DELETED |";
+            if (fileToDelete.delete()) {
+                return "| FILE SUCCESSFULLY DELETED |";
+            }
+            return "| FILE WAS NOT DELETED |";
         }
 
         return "| ERROR FILE NOT FOUND |";
@@ -94,10 +128,27 @@ public abstract class Strategy {
         return null;
     }
 
+    // ====================== AUXILIAR METHODS =======================
+
+    /**
+     * Given a certain file, splits it in half and returns it as two new Files,
+     * not damaging the full file.
+     * @param file {@link} File to split
+     * @return {@link Result} storing both halves of the given file
+     */
     public static Result<File, File> splitFile(File file) {
         return splitFile(file, "File1", "File2");
     }
 
+    /**
+     * Given a certain file, splits it in half and returns it as two new Files,
+     * not damaging the full file.
+     * @param file {@link File} to split
+     * @param firstName Name of the first half
+     * @param secondName Name of the second half
+     * @return {@link Result} storing both halves of the given file, named
+     * as specified by parameters
+     */
     public static Result<File, File> splitFile(File file, String firstName, String secondName) {
         final String auxPath = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Auxiliar\\";
         long fileLength = file.length();
@@ -133,47 +184,64 @@ public abstract class Strategy {
             e.printStackTrace();
         }
         finally {
-            if (bis != null) {
-                try {
-                    bis.close();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (bos1 != null) {
-                try {
-                    bos1.close();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (bos2 != null) {
-                try {
-                    bos2.close();
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            Server.closeResource(bis);
+            Server.closeResource(bos1);
+            Server.closeResource(bos2);
         }
 
         return result;
     }
 
-    protected void waitForConnection() {
+    /**
+     * Returns a Result object containing the file name (without the extension)
+     * and the file extension as two separate parts.
+     *
+     * @param file the File object
+     * @return a Result<String, String> where result1 is the file name and result2 is the file extension
+     */
+    public static Result<String, String> getFileNameAndExtension(File file) {
+        return getFileNameAndExtension(file.getName());
+    }
+
+
+    /**
+     * Returns a Result object containing the file name (without the extension)
+     * and the file extension as two separate parts.
+     *
+     * @param fileName Name of a File
+     * @return a Result<String, String> where result1 is the file name and result2 is the file extension
+     */
+    public static Result<String, String> getFileNameAndExtension(String fileName) {
+        int lastIndexOfDot = fileName.lastIndexOf('.');
+
+        // If no extension is found or the dot is the last character
+        if (lastIndexOfDot == -1 || lastIndexOfDot == fileName.length() - 1) {
+            return new Result<>(fileName, ""); // No extension
+        }
+
+        String nameWithoutExtension = fileName.substring(0, lastIndexOfDot);
+        String extension = fileName.substring(lastIndexOfDot + 1);
+
+        return new Result<>(nameWithoutExtension, extension);
+    }
+
+
+    /**
+     * Method that sleeps until the rest of the servers are up. A
+     * message would be sent to the current {@link Server} if they
+     * are not up.
+     */
+    protected void waitForConnections() {
         while (!connectionTestLeft.isConnectionAvailable() || !connectionTestRight.isConnectionAvailable()) {
             System.out.println("PERIPHERAL SERVERS ARE NOT UP");
-            try {
-                sleep(500);
-            }
-            catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
+
+    /**
+     * Starts {@link ConnectionTest} instances of this specific {@link Server}
+     * instance.
+     */
     protected void bootConnections() {
         if (!connectionTestLeft.isAlive()) {
             connectionTestLeft.start();
@@ -181,5 +249,34 @@ public abstract class Strategy {
         if (!connectionTestRight.isAlive()) {
             connectionTestRight.start();
         }
+    }
+
+
+    /**
+     * Builds communication with an external {@link Server} to send them
+     * a request related to the given request type. Returns back a confirmation
+     * depending on the request.
+     * @param socket {@link Socket} of the {@link Server} to contact
+     * @param fileToSend {@link File} to send
+     * @param request Integer representing the request to perform; accesible
+     *                from static instances of {@link Server}
+     * @return Success message {@link String}, f.e.:
+     * {@code "EXTERNAL SERVER REQUEST COMPLETED"}
+     * @throws IOException if there has been an error building
+     */
+    protected static String sendTo(Socket socket, File fileToSend, int request) throws IOException, ClassNotFoundException {
+
+        // Crear los streams para el primer servidor parcial
+        ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+        ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
+
+        // Pedirle al primer servidor que guarde la primera mitad
+        // del fichero y recibir un mensaje
+        oos.writeInt(request);
+        oos.flush();
+        oos.writeObject(fileToSend);
+        oos.flush();
+
+        return (String) ois.readObject();
     }
 }

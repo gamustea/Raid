@@ -5,7 +5,6 @@ import raid.servers.CentralServer;
 import raid.servers.EastServer;
 import raid.servers.Server;
 import raid.servers.WestServer;
-import raid.servers.threads.ClientManager;
 
 public class Main {
     public static void main(String[] args) {
@@ -17,6 +16,6 @@ public class Main {
         se2.start();
         se3.start();
 
-        new Client("localhost", Server.CENTRAL_CLIENT_PORT).boot();
+        new Client("localhost", Server.WEST_CLIENT_PORT).boot();
     }
 }
