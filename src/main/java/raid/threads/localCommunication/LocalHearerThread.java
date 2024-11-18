@@ -1,5 +1,6 @@
 package raid.threads.localCommunication;
 
+import raid.RS;
 import raid.servers.*;
 import raid.servers.files.strategies.*;
 
@@ -32,15 +33,15 @@ public class LocalHearerThread extends Thread {
 
                     int command = ois.readInt();
                     String message = null;
-                    if (command == Server.SAVE_FILE) {
+                    if (command == RS.SAVE_FILE) {
                         File file = (File) ois.readObject();
                         message = strategy.selfSaveFile(file);
                     }
-                    if (command == Server.GET_FILE) {
+                    if (command == RS.GET_FILE) {
                         String fileName = (String) ois.readObject();
                         message = strategy.selfGetFile(fileName);
                     }
-                    if (command == Server.DELETE_FILE) {
+                    if (command == RS.DELETE_FILE) {
                         String fileName = (String) ois.readObject();
                         message = strategy.selfDeleteFile(fileName);
                     }
