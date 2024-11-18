@@ -1,16 +1,16 @@
-package raid.servers.threads;
+package raid.threads.testers;
 
 import raid.servers.Server;
 
 import java.io.IOException;
 import java.net.Socket;
 
-public class ConnectionTest extends Thread{
+public class ConnectionTestThread extends Thread{
     private final int PORT;
     private final String HOST;
     private boolean connectionAvailable;
 
-    public ConnectionTest(int port, String host) {
+    public ConnectionTestThread(int port, String host) {
         this.PORT = port;
         this.HOST = host;
     }

@@ -1,4 +1,4 @@
-package raid.servers.threads;
+package raid.threads;
 
 import raid.servers.files.FileManager;
 import raid.servers.Server;
@@ -14,7 +14,7 @@ import java.net.Socket;
  * the respective user— and an {@link Strategy}, associated with the server
  * hosting the thread.
  */
-public class ClientManager extends Thread {
+public class ClientManagerThread extends Thread {
     private final Socket clientSocket;
     private final FileManager fileManager;
 
@@ -25,14 +25,14 @@ public class ClientManager extends Thread {
      * @param socket {@link Socket} of the client
      * @param strategy {@link Strategy} to follow
      */
-    public ClientManager(Socket socket, Strategy strategy) {
+    public ClientManagerThread(Socket socket, Strategy strategy) {
         this.clientSocket = socket;
         this.fileManager = new FileManager(strategy);
     }
 
 
     /**
-     * <p>Executes de {@code ClientManager} {@code run()} method, so that it begins
+     * <p>Executes de {@code ClientManagerThread} {@code run()} method, so that it begins
      * the communication between the client and the {@link Server} hosting the thread
      * and connection. By starting this method, the server would ask for an instruction
      * -as a {@link String}- to perform, which can be one of the respective
