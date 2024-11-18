@@ -20,12 +20,9 @@ public abstract class Strategy {
     protected Path path;
     protected StrategyType strategyType;
 
-    protected final static String HOSTS = "/hosts.properties";
-    protected final static String PORTS = "/ports.properties";
-
-    protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT", PORTS));
-    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT", PORTS));
-    protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT", PORTS));
+    protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT"));
+    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT"));
+    protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT"));
 
     public abstract String saveFile(File file);
     public abstract String deleteFile(String file);
@@ -55,14 +52,15 @@ public abstract class Strategy {
         }
     }
 
-    private static String getProperty(String clave, String propertiesFile) {
+    private static String getProperty(String clave) {
         String valor = null;
         try {
             Properties props = new Properties();
-            InputStream prIS = Server.class.getResourceAsStream(propertiesFile);
+            InputStream prIS = Server.class.getResourceAsStream("/ports.properties");
             props.load(prIS);
             valor = props.getProperty(clave);
-        } catch (IOException ex) {
+        }
+        catch (IOException ex) {
             ex.printStackTrace();
         }
         return valor;
@@ -102,6 +100,7 @@ public abstract class Strategy {
         return "SAVED";
     }
 
+
     /**
      * Method that allows a {@link Server} instance to remove a given {@link File}
      * from its file storaging path.
@@ -119,8 +118,9 @@ public abstract class Strategy {
             return "| FILE WAS NOT DELETED |";
         }
 
-        return "| ERROR FILE NOT FOUND |";
+        return "| ERROR - FILE NOT FOUND |";
     }
+
 
     public String selfGetFile(String file) {
         return null;

@@ -1,20 +1,23 @@
 package raid.threads.localCommunication;
 
+import raid.RS;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
+
 public abstract class RequestSenderThread extends Thread{
     protected Socket socket;
     protected int request;
-    protected String result;
+    protected int result;
     protected Object objectToSend;
 
     protected RequestSenderThread(Socket socket, int request) {
         this.socket = socket;
         this.request = request;
-        this.result = "| NOT FINISHED YET |";
+        this.result = RS.NOT_READY;
     }
 
     @Override
@@ -31,14 +34,15 @@ public abstract class RequestSenderThread extends Thread{
             oos.writeObject(objectToSend);
             oos.flush();
 
-            result = (String) ois.readObject();
+            String message = (String) ois.readObject();
+            result = RS.SUCCESS;
         }
         catch (IOException | ClassNotFoundException e) {
-            result = e.getMessage();
+            result = RS.CRITICAL_ERROR;
         }
     }
 
-    public String getResult() {
+    public int getResult() {
         return result;
     }
 }

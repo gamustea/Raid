@@ -57,10 +57,6 @@ public abstract class Server {
      */
     protected int localCommunicationPort;
 
-    public static final int GET_FILE = 1;
-    public static final int SAVE_FILE = 2;
-    public static final int DELETE_FILE = 3;
-    public static final int CLOSE_CONNECTION = 4;
     protected final static String HOSTS = "/hosts.properties";
     protected final static String PORTS = "/ports.properties";
 

@@ -1,5 +1,6 @@
 package raid.servers.files.strategies;
 
+import raid.RS;
 import raid.servers.Server;
 import raid.threads.localCommunication.FileRequestSenderThread;
 import raid.threads.localCommunication.NameRequestSenderThread;
@@ -32,8 +33,8 @@ public class FullSavingStrategy extends Strategy {
                     fileParts.getResult1() + "_2." + fileParts.getResult2()
             );
 
-            RequestSenderThread f1 = new FileRequestSenderThread(westServerSocket, result.getResult1(), Server.SAVE_FILE);
-            RequestSenderThread f2 = new FileRequestSenderThread(eastServerSocket, result.getResult2(), Server.SAVE_FILE);
+            RequestSenderThread f1 = new FileRequestSenderThread(westServerSocket, result.getResult1(), RS.SAVE_FILE);
+            RequestSenderThread f2 = new FileRequestSenderThread(eastServerSocket, result.getResult2(), RS.SAVE_FILE);
 
             f1.start();
             f2.start();
@@ -68,7 +69,7 @@ public class FullSavingStrategy extends Strategy {
 
         String finalMessage = selfDeleteFile(fileName);
 
-        if (!finalMessage.equals("| ERROR FILE NOT FOUND |")) {
+        if (!finalMessage.equals("| ERROR - FILE NOT FOUND |")) {
             try {
                 westServerSocket = new Socket(Server.WEST_HOST, Strategy.WEST_LOCAL_CONNECTION_PORT);
                 eastServerSocket = new Socket(Server.EAST_HOST, Strategy.EAST_LOCAL_CONNECTION_PORT);
@@ -78,8 +79,8 @@ public class FullSavingStrategy extends Strategy {
                 String fileName1 = result.getResult1() + "_1." + result.getResult2();
                 String fileName2 = result.getResult1() + "_2." + result.getResult2();
 
-                RequestSenderThread f1 = new NameRequestSenderThread(westServerSocket, fileName1, Server.DELETE_FILE);
-                RequestSenderThread f2 = new NameRequestSenderThread(eastServerSocket, fileName2, Server.DELETE_FILE);
+                RequestSenderThread f1 = new NameRequestSenderThread(westServerSocket, fileName1, RS.DELETE_FILE);
+                RequestSenderThread f2 = new NameRequestSenderThread(eastServerSocket, fileName2, RS.DELETE_FILE);
 
                 f1.start();
                 f2.start();
@@ -87,16 +88,13 @@ public class FullSavingStrategy extends Strategy {
                 f1.join();
                 f2.join();
 
+                // Cambiar mensaje si no se han borrado todos los archivos
+                if (!(f1.getResult() == RS.SUCCESS) || !(f2.getResult() == RS.SUCCESS)) {
+                    finalMessage = "| ERROR WHILE DELETING |";
+                }
+
                 System.out.println(f1.getResult());
                 System.out.println(f2.getResult());
-
-                if (f1.getResult().equalsIgnoreCase("| FILE SUCCESSFULLY DELETED |")
-                    && f2.getResult().equalsIgnoreCase("| FILE SUCCESSFULLY DELETED |")) {
-                    finalMessage = "| FILE COMPLETELY DELETED |";
-                }
-                else {
-                    finalMessage = "| FILE NOT ENTIRELY DELETED |";
-                }
             }
             catch (IOException | InterruptedException e) {
                 return "| ERROR WHILE DELETING |";

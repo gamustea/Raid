@@ -1,5 +1,6 @@
 package raid.threads;
 
+import raid.RS;
 import raid.servers.files.FileManager;
 import raid.servers.Server;
 import raid.servers.files.strategies.Strategy;
@@ -61,7 +62,7 @@ public class ClientManagerThread extends Thread {
 
             // Recibe el comando, y si es "CLOSE", directamente lo descarta
             int command = ois.readInt();
-            while (command != Server.CLOSE_CONNECTION) {
+            while (command != RS.CLOSE_CONNECTION) {
                 File file;
                 String fileName;
 
@@ -69,7 +70,7 @@ public class ClientManagerThread extends Thread {
                 // según el Strategy insertado en el FileManager durante la construcción
                 String message = "";
                 switch(command) {
-                    case Server.GET_FILE: {
+                    case RS.GET_FILE: {
 
                         // Recibe del cliente el nombre del archivo que quiere recibir
                         fileName = (String) ois.readObject();
@@ -78,7 +79,7 @@ public class ClientManagerThread extends Thread {
                         message = fileManager.getFile(fileName, clientSocket);
                         break;
                     }
-                    case Server.SAVE_FILE: {
+                    case RS.SAVE_FILE: {
 
                         // Recibe del cliente el objeto File que quiere guardar
                         file = (File) ois.readObject();
@@ -87,7 +88,7 @@ public class ClientManagerThread extends Thread {
                         message = fileManager.saveFile(file);
                         break;
                     }
-                    case Server.DELETE_FILE: {
+                    case RS.DELETE_FILE: {
                         fileName = (String) ois.readObject();
                         message = fileManager.deleteFile(fileName);
                         break;

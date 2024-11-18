@@ -1,5 +1,6 @@
 package raid.clients;
 
+import raid.RS;
 import raid.servers.CentralServer;
 import raid.servers.Server;
 import returning.Result;
@@ -37,7 +38,7 @@ public class Client {
             // Mando al servidor la operación a realizar
             oos.writeInt(command);
             oos.flush();
-            while (command != Server.CLOSE_CONNECTION) {
+            while (command != RS.CLOSE_CONNECTION) {
 
                 // Gestión del resultado obtenido del comando
                 String message = manageCommand(command, fileName, oos, ois);
@@ -81,7 +82,7 @@ public class Client {
 
             // Si el comando es Close, sale directamente
             if (command.equalsIgnoreCase("close")) {
-                return new Result<>(Server.CLOSE_CONNECTION, null);
+                return new Result<>(RS.CLOSE_CONNECTION, null);
             }
 
             // Divide el contenido de la String
@@ -102,14 +103,14 @@ public class Client {
                     case "GET":
                     case "Get":
                     case "get":
-                        result = new Result<>(Server.GET_FILE, fileName);
+                        result = new Result<>(RS.GET_FILE, fileName);
                         commandNotValid = false;
                         break;
                     case "Save":
                     case "SAVE":
                     case "save":
                         if (file.exists()) {
-                            result = new Result<>(Server.SAVE_FILE, fileName);
+                            result = new Result<>(RS.SAVE_FILE, fileName);
                             commandNotValid = false;
                         }
                         else {
@@ -119,7 +120,7 @@ public class Client {
                     case "Delete":
                     case "DELETE":
                     case "delete":
-                        result = new Result<>(Server.DELETE_FILE, fileName);
+                        result = new Result<>(RS.DELETE_FILE, fileName);
                         commandNotValid = false;
                         break;
                     default:
@@ -133,12 +134,12 @@ public class Client {
 
     private static String manageCommand(int command, String fileName, ObjectOutputStream oos, ObjectInputStream ois) throws IOException, ClassNotFoundException {
         switch (command) {
-            case Server.GET_FILE, Server.DELETE_FILE: {
+            case RS.GET_FILE, RS.DELETE_FILE: {
                 oos.writeObject(fileName);
                 oos.flush();
                 break;
             }
-            case Server.SAVE_FILE: {
+            case RS.SAVE_FILE: {
                 oos.writeObject(new File(fileName));
                 oos.flush();
                 break;

@@ -1,5 +1,6 @@
 package raid.servers.files.strategies;
 
+import raid.RS;
 import raid.servers.Server;
 import raid.threads.localCommunication.FileRequestSenderThread;
 import raid.threads.localCommunication.NameRequestSenderThread;
@@ -49,8 +50,8 @@ public class PartialSavingStrategy extends Strategy {
                 localHalfFile = result.getResult1();
             }
 
-            f1 = new FileRequestSenderThread(centralServerSocket, file, Server.SAVE_FILE);
-            f2 = new FileRequestSenderThread(peripheralServerSocket, externalHalfFile, Server.SAVE_FILE);
+            f1 = new FileRequestSenderThread(centralServerSocket, file, RS.SAVE_FILE);
+            f2 = new FileRequestSenderThread(peripheralServerSocket, externalHalfFile, RS.SAVE_FILE);
 
             f1.start();
             f2.start();
@@ -66,7 +67,7 @@ public class PartialSavingStrategy extends Strategy {
             return "SAVED";
         }
         catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         finally {
             Server.closeResource(centralServerSocket);
@@ -108,8 +109,8 @@ public class PartialSavingStrategy extends Strategy {
             // Manda a cada Thread a realizar su correspondiente tarea (en este caso
             // borrar el archivo de cada servidor correspondiente). A CentralServer
             // le envío el nombre entero y al periférico, la mitad correspondiente
-            f1 = new NameRequestSenderThread(centralServerSocket, file, Server.DELETE_FILE);
-            f2 = new NameRequestSenderThread(peripheralServerSocket, externalHalfFile, Server.DELETE_FILE);
+            f1 = new NameRequestSenderThread(centralServerSocket, file, RS.DELETE_FILE);
+            f2 = new NameRequestSenderThread(peripheralServerSocket, externalHalfFile, RS.DELETE_FILE);
 
             f1.start();
             f2.start();
@@ -120,7 +121,7 @@ public class PartialSavingStrategy extends Strategy {
             System.out.println(f2.getResult());
         }
         catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         finally {
             Server.closeResource(centralServerSocket);
