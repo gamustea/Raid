@@ -68,7 +68,7 @@ public class ClientManagerThread extends Thread {
 
                 // Filtra por el tipo de comando recibido y ejecuta el método correspondiente
                 // según el Strategy insertado en el FileManager durante la construcción
-                String message = "";
+                int message = RS.NOT_READY;
                 switch(command) {
                     case RS.GET_FILE: {
 
@@ -95,7 +95,9 @@ public class ClientManagerThread extends Thread {
                     }
                 }
 
-                oos.writeObject(message);
+                // Mandar el resultado de la operación al cliente
+                System.out.println(message);
+                oos.writeObject("| COMPLETED |");
                 oos.flush();
                 command = ois.readInt();
             }

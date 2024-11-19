@@ -7,7 +7,10 @@ public abstract class RS {
     public static final int CLOSE_CONNECTION = 4;
 
     public final static int NOT_READY = 10;
-    public final static int SUCCESS = 11;
-    public final static int FILE_NOT_FOUND = 12;
-    public final static int CRITICAL_ERROR = 13;
+    public final static int FILE_NOT_FOUND = 11;
+    public final static int CRITICAL_ERROR = 12;
+    public final static int FILE_DELETED = 13;
+    public final static int FILE_STORED = 14;
+    public final static int FILE_RETRIEVED = 15;
+    public final static int SUCCESS = 16;
 }

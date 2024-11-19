@@ -80,7 +80,7 @@ public abstract class Server {
             props.load(prIS);
             valor = props.getProperty(clave);
         } catch (IOException ex) {
-            ex.printStackTrace();
+            System.out.println(ex.getMessage());
         }
         return valor;
     }
@@ -131,6 +131,7 @@ public abstract class Server {
             closeResource(clientManager);
             closeResource(hearingThread);
 
+            // Cerrar el socket del servidor
             closeResource(serverSocket);
         }
     }

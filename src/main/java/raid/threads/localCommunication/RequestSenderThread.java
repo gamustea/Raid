@@ -34,10 +34,18 @@ public abstract class RequestSenderThread extends Thread{
             oos.writeObject(objectToSend);
             oos.flush();
 
-            String message = (String) ois.readObject();
-            result = RS.SUCCESS;
+            int processCode = ois.readInt();
+            switch (processCode) {
+                case RS.FILE_DELETED:
+                case RS.FILE_RETRIEVED:
+                case RS.FILE_STORED:
+                    result = RS.SUCCESS;
+                    break;
+                default:
+                    result = RS.CRITICAL_ERROR;
+            }
         }
-        catch (IOException | ClassNotFoundException e) {
+        catch (IOException e) {
             result = RS.CRITICAL_ERROR;
         }
     }

@@ -16,7 +16,7 @@ public class FullSavingStrategy extends Strategy {
     }
 
     @Override
-    public String saveFile(File file) {
+    public int saveFile(File file) {
         System.out.println("| STARTING TO SAVE " + file.getName() + " |\n");
 
         Socket westServerSocket = null; Socket eastServerSocket = null;
@@ -41,12 +41,9 @@ public class FullSavingStrategy extends Strategy {
 
             f1.join();
             f2.join();
-
-            System.out.println(f1.getResult());
-            System.out.println(f2.getResult());
         }
         catch (IOException | InterruptedException e) {
-            return "| ERROR WHILE STORAGING |";
+            return RS.CRITICAL_ERROR;
         }
         finally {
             Server.closeResource(connectionTestLeft);
@@ -57,19 +54,19 @@ public class FullSavingStrategy extends Strategy {
         }
         selfSaveFile(file);
 
-        return "| FILE SAVED |";
+        return RS.FILE_STORED;
     }
 
     @Override
-    public String deleteFile(String fileName) {
+    public int deleteFile(String fileName) {
         System.out.println("| STARTING TO DELETE " + fileName + " |\n");
 
         Socket westServerSocket = null; Socket eastServerSocket = null;
         checkPathExistence(path); bootConnections(); waitForConnections();
 
-        String finalMessage = selfDeleteFile(fileName);
+        int localMessage = selfDeleteFile(fileName);
 
-        if (!finalMessage.equals("| ERROR - FILE NOT FOUND |")) {
+        if (localMessage == RS.FILE_DELETED) {
             try {
                 westServerSocket = new Socket(Server.WEST_HOST, Strategy.WEST_LOCAL_CONNECTION_PORT);
                 eastServerSocket = new Socket(Server.EAST_HOST, Strategy.EAST_LOCAL_CONNECTION_PORT);
@@ -90,14 +87,14 @@ public class FullSavingStrategy extends Strategy {
 
                 // Cambiar mensaje si no se han borrado todos los archivos
                 if (!(f1.getResult() == RS.SUCCESS) || !(f2.getResult() == RS.SUCCESS)) {
-                    finalMessage = "| ERROR WHILE DELETING |";
+                    return RS.CRITICAL_ERROR;
                 }
 
                 System.out.println(f1.getResult());
                 System.out.println(f2.getResult());
             }
             catch (IOException | InterruptedException e) {
-                return "| ERROR WHILE DELETING |";
+                return RS.CRITICAL_ERROR;
             }
             finally {
                 Server.closeResource(connectionTestLeft);
@@ -107,12 +104,15 @@ public class FullSavingStrategy extends Strategy {
                 Server.closeResource(eastServerSocket);
             }
         }
+        else {
+            return RS.CRITICAL_ERROR;
+        }
 
-        return finalMessage;
+        return RS.FILE_DELETED;
     }
 
     @Override
-    public String getFile(String file) {
-        return null;
+    public int getFile(String file) {
+        return 0;
     }
 }

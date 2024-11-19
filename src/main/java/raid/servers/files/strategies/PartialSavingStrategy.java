@@ -19,7 +19,7 @@ public class PartialSavingStrategy extends Strategy {
     }
 
     @Override
-    public String saveFile(File file) {
+    public int saveFile(File file) {
         Socket centralServerSocket = null; Socket peripheralServerSocket = null;
         RequestSenderThread f1 = null; RequestSenderThread f2 = null;
 
@@ -58,13 +58,10 @@ public class PartialSavingStrategy extends Strategy {
             f1.join();
             f2.join();
 
-            System.out.println(f1.getResult());
-            System.out.println(f2.getResult());
-
             assert localHalfFile != null;
             selfSaveFile(localHalfFile);
 
-            return "SAVED";
+            return RS.FILE_STORED;
         }
         catch (IOException | InterruptedException e) {
             System.out.println(e.getMessage());
@@ -76,11 +73,11 @@ public class PartialSavingStrategy extends Strategy {
             Server.closeResource(f2);
         }
 
-        return "ERROR";
+        return RS.CRITICAL_ERROR;
     }
 
     @Override
-    public String deleteFile(String file) {
+    public int deleteFile(String file) {
         Socket centralServerSocket = null; Socket peripheralServerSocket = null;
         RequestSenderThread f1 = null; RequestSenderThread f2 = null;
 
@@ -88,6 +85,8 @@ public class PartialSavingStrategy extends Strategy {
         String externalHalfFile;
 
         checkPathExistence(path); bootConnections(); waitForConnections();
+
+        int finalMessage = RS.FILE_DELETED;
 
         try {
             centralServerSocket = new Socket(Server.CENTRAL_HOST, CENTRAL_LOCAL_CONNECTION_PORT);
@@ -117,8 +116,9 @@ public class PartialSavingStrategy extends Strategy {
             f1.join();
             f2.join();
 
-            System.out.println(f1.getResult());
-            System.out.println(f2.getResult());
+            if (!(f1.getResult() == RS.SUCCESS) || !(f2.getResult() == RS.SUCCESS)) {
+                finalMessage = RS.CRITICAL_ERROR;
+            }
         }
         catch (IOException | InterruptedException e) {
             System.out.println(e.getMessage());
@@ -129,16 +129,13 @@ public class PartialSavingStrategy extends Strategy {
             Server.closeResource(f1);
             Server.closeResource(f2);
         }
-
-        // Borro la mitad correspondiente de este servidor
-        assert localHalfFile != null;
         selfDeleteFile(localHalfFile);
 
-        return "| FILE COMPLETELY DELETED |";
+        return finalMessage;
     }
 
     @Override
-    public String getFile(String file) {
-        return null;
+    public int getFile(String file) {
+        return 0;
     }
 }

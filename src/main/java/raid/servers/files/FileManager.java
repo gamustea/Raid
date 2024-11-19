@@ -12,15 +12,15 @@ public class FileManager{
         this.strategy = strategy;
     }
 
-    public String saveFile(File file) {
+    public int saveFile(File file) {
         return strategy.saveFile(file);
     }
 
-    public String deleteFile(String file) {
+    public int deleteFile(String file) {
         return strategy.deleteFile(file);
     }
 
-    public String getFile(String name, Socket clientSocket) {
+    public int getFile(String name, Socket clientSocket) {
         return strategy.getFile(name);
     }
 

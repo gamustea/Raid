@@ -55,25 +55,16 @@ public class Client {
             }
         }
         catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         finally {
-            if (s != null) {
-                try {
-                    s.close();
-                }
-                catch (IOException e) {
-                    System.out.println(e.getMessage());
-                }
-            }
+            Server.closeResource(s);
         }
     }
 
     private static Result<Integer, String> getCommand() {
         Result<Integer, String> result = null;
-
         Scanner scanner = new Scanner(System.in);
-
         boolean commandNotValid = true;
 
         while (commandNotValid) {

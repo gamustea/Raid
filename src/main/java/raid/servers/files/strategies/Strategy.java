@@ -1,5 +1,6 @@
 package raid.servers.files.strategies;
 
+import raid.RS;
 import raid.servers.Server;
 import raid.servers.WestServer;
 import raid.threads.testers.ConnectionTestThread;
@@ -9,7 +10,6 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Properties;
 
 import static java.lang.Thread.sleep;
@@ -24,9 +24,9 @@ public abstract class Strategy {
     protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT"));
     protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT"));
 
-    public abstract String saveFile(File file);
-    public abstract String deleteFile(String file);
-    public abstract String getFile(String file);
+    public abstract int saveFile(File file);
+    public abstract int deleteFile(String file);
+    public abstract int getFile(String file);
 
     protected Strategy(String pathName, StrategyType strategyType) {
         path = Path.of(pathName);
@@ -52,6 +52,7 @@ public abstract class Strategy {
         }
     }
 
+
     private static String getProperty(String clave) {
         String valor = null;
         try {
@@ -66,13 +67,14 @@ public abstract class Strategy {
         return valor;
     }
 
+
     /**
      * Method that allows a {@link Server} instance to save a given {@link File}
      * in its file storaging path.
      * @param file {@link File} to store
      * @return "SAVED" if the file was successfully stored
      */
-    public String selfSaveFile(File file) {
+    public int selfSaveFile(File file) {
         File storedFile = new File(path +
                 "\\" +
                 file.getName());
@@ -97,7 +99,7 @@ public abstract class Strategy {
             Server.closeResource(bos);
         }
 
-        return "SAVED";
+        return RS.FILE_STORED;
     }
 
 
@@ -107,24 +109,25 @@ public abstract class Strategy {
      * @param fileName Name of the file to delete
      * @return "DELETED" if the file was successfully stored
      */
-    public String selfDeleteFile(String fileName) {
+    public int selfDeleteFile(String fileName) {
         String realFileName = path + "\\" + fileName;
         File fileToDelete = new File(realFileName);
 
         if (fileToDelete.exists()) {
             if (fileToDelete.delete()) {
-                return "| FILE SUCCESSFULLY DELETED |";
+                return RS.FILE_DELETED;
             }
-            return "| FILE WAS NOT DELETED |";
+            return RS.CRITICAL_ERROR;
         }
 
-        return "| ERROR - FILE NOT FOUND |";
+        return RS.FILE_NOT_FOUND;
     }
 
 
-    public String selfGetFile(String file) {
-        return null;
+    public int selfGetFile(String file) {
+        return 0;
     }
+
 
     // ====================== AUXILIARY METHODS =======================
 
@@ -135,8 +138,13 @@ public abstract class Strategy {
      * @return {@link Result} storing both halves of the given file
      */
     public static Result<File, File> splitFile(File file) {
-        return splitFile(file, "File1", "File2");
+        Result<String, String> result = getFileNameAndExtension(file.getName());
+        String name1 = result.getResult1() + "_1." + result.getResult2();
+        String name2 = result.getResult1() + "_2." + result.getResult2();
+
+        return splitFile(file, name1, name2);
     }
+
 
     /**
      * Given a certain file, splits it in half and returns it as two new Files,
@@ -189,6 +197,7 @@ public abstract class Strategy {
 
         return result;
     }
+
 
     /**
      * Returns a Result object containing the file name (without the extension)
@@ -251,34 +260,10 @@ public abstract class Strategy {
 
 
     /**
-     * Builds communication with an external {@link Server} to send them
-     * a request related to the given request type. Returns back a confirmation
-     * depending on the request.
-     * @param socket {@link Socket} of the {@link Server} to contact
-     * @param fileToSend {@link File} to send
-     * @param request Integer representing the request to perform; accesible
-     *                from static instances of {@link Server}
-     * @return Success message {@link String}, f.e.:
-     * {@code "EXTERNAL SERVER REQUEST COMPLETED"}
-     * @throws IOException if there has been an error building
+     * Checks that the given path exists in the current host. If it does not,
+     * method creates it in the given.
+     * @param path {@link Path} to check
      */
-    protected static String sendTo(Socket socket, File fileToSend, int request) throws IOException, ClassNotFoundException {
-
-        // Crear los streams para el primer servidor parcial
-        ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
-        ObjectInputStream ois = new ObjectInputStream(socket.getInputStream());
-
-        // Pedirle al primer servidor que guarde la primera mitad
-        // del fichero y recibir un mensaje
-        oos.writeInt(request);
-        oos.flush();
-        oos.writeObject(fileToSend);
-        oos.flush();
-
-        return (String) ois.readObject();
-    }
-
-
     protected static void checkPathExistence(Path path) {
         try {
             if (!Files.exists(path)) {

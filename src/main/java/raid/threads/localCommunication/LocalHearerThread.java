@@ -32,7 +32,7 @@ public class LocalHearerThread extends Thread {
                     ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
 
                     int command = ois.readInt();
-                    String message = null;
+                    int message = -1;
                     if (command == RS.SAVE_FILE) {
                         File file = (File) ois.readObject();
                         message = strategy.selfSaveFile(file);
@@ -45,7 +45,7 @@ public class LocalHearerThread extends Thread {
                         String fileName = (String) ois.readObject();
                         message = strategy.selfDeleteFile(fileName);
                     }
-                    oos.writeObject(message);
+                    oos.writeInt(message);
                     oos.flush();
                 }
                 catch (ClassNotFoundException | IOException e) {
