@@ -18,6 +18,7 @@ import java.net.Socket;
 public class ClientManagerThread extends Thread {
     private final Socket clientSocket;
     private final FileManager fileManager;
+    private final String clientHost;
 
     /**
      * Builds a specialized {@link Thread} instance, by allowing the communication
@@ -29,6 +30,7 @@ public class ClientManagerThread extends Thread {
     public ClientManagerThread(Socket socket, Strategy strategy) {
         this.clientSocket = socket;
         this.fileManager = new FileManager(strategy);
+        this.clientHost = socket.getInetAddress().getCanonicalHostName();
     }
 
 
@@ -76,7 +78,7 @@ public class ClientManagerThread extends Thread {
                         fileName = (String) ois.readObject();
 
                         // Le devuelve al cliente el resultado de la operación de obtención
-                        message = fileManager.getFile(fileName, clientSocket);
+                        message = fileManager.getFile(fileName, clientHost);
                         break;
                     }
                     case RS.SAVE_FILE: {
@@ -96,7 +98,7 @@ public class ClientManagerThread extends Thread {
                 }
 
                 // Mandar el resultado de la operación al cliente
-                System.out.println(message);
+                // TODO: HACER QUE SE MANDE UN MENSAJE EN FUNCIÓN DEL MENSAJE RECIBIDO
                 oos.writeObject("| COMPLETED |");
                 oos.flush();
                 command = ois.readInt();

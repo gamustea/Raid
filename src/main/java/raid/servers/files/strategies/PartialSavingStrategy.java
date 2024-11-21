@@ -135,7 +135,7 @@ public class PartialSavingStrategy extends Strategy {
     }
 
     @Override
-    public int getFile(String file) {
+    public int getFile(String file, String clientHost) {
         return 0;
     }
 }

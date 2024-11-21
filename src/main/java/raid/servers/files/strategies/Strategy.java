@@ -7,7 +7,6 @@ import raid.threads.testers.ConnectionTestThread;
 import returning.Result;
 
 import java.io.*;
-import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
@@ -26,7 +25,7 @@ public abstract class Strategy {
 
     public abstract int saveFile(File file);
     public abstract int deleteFile(String file);
-    public abstract int getFile(String file);
+    public abstract int getFile(String file, String clientHost);
 
     protected Strategy(String pathName, StrategyType strategyType) {
         path = Path.of(pathName);
@@ -75,9 +74,7 @@ public abstract class Strategy {
      * @return "SAVED" if the file was successfully stored
      */
     public int selfSaveFile(File file) {
-        File storedFile = new File(path +
-                "\\" +
-                file.getName());
+        File storedFile = new File(path + "\\" + file.getName());
         byte[] buffer = new byte[(int) (file.length() - 1)];
 
         BufferedInputStream bis = null;
@@ -124,7 +121,7 @@ public abstract class Strategy {
     }
 
 
-    public int selfGetFile(String file) {
+    public int selfGetFile(String file, String clientHost) {
         return 0;
     }
 

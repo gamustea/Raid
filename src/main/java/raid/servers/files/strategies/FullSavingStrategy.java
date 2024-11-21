@@ -112,7 +112,7 @@ public class FullSavingStrategy extends Strategy {
     }
 
     @Override
-    public int getFile(String file) {
+    public int getFile(String file, String host) {
         return 0;
     }
 }

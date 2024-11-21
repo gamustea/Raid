@@ -3,7 +3,6 @@ package raid.servers.files;
 import raid.servers.files.strategies.Strategy;
 
 import java.io.File;
-import java.net.Socket;
 
 public class FileManager{
     private Strategy strategy;
@@ -20,8 +19,8 @@ public class FileManager{
         return strategy.deleteFile(file);
     }
 
-    public int getFile(String name, Socket clientSocket) {
-        return strategy.getFile(name);
+    public int getFile(String name, String clientHost) {
+        return strategy.getFile(name, clientHost);
     }
 
     public void setStrategy(Strategy strategy) {
