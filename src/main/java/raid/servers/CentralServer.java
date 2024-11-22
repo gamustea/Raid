@@ -1,6 +1,7 @@
 package raid.servers;
 
 import raid.servers.files.strategies.FullSavingStrategy;
+import static raid.Util.getProperty;
 
 /**
  * Instance of {@link Server}. Follows a {@link FullSavingStrategy},
@@ -9,10 +10,10 @@ import raid.servers.files.strategies.FullSavingStrategy;
  */
 public class CentralServer extends Server {
     public CentralServer() {
-        host = "localhost";
-        testPort = 55551;
-        port = 55554;
-        localCommunicationPort = 55557;
+        host = getProperty("CENTRAL_HOST", PORTS);
+        testPort = Integer.parseInt(getProperty("CENTRAL_TEST_PORT", PORTS));
+        port = Integer.parseInt(getProperty("CENTRAL_CLIENT_PORT", PORTS));
+        localCommunicationPort = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT", PORTS));
         this.strategy = new FullSavingStrategy("C:\\Users\\gmiga\\Documents\\RaidTesting\\RaidCentral");
     }
 }

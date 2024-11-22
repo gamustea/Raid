@@ -1,8 +1,7 @@
 package raid.clients;
 
-import raid.RS;
+import raid.Util;
 import raid.clients.threads.RetrieverThread;
-import raid.servers.CentralServer;
 import raid.servers.Server;
 import raid.servers.files.strategies.Strategy;
 import returning.Result;
@@ -10,6 +9,9 @@ import returning.Result;
 import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
+
+import static java.lang.Thread.sleep;
+import static raid.Util.*;
 
 
 public class Client {
@@ -24,13 +26,14 @@ public class Client {
 
     public void boot() {
         Socket s = null;
+
         try {
             System.out.println("Starting connection");
             s = new Socket(host, port);
             System.out.println("| Connection successful |");
 
-            ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
-            ObjectInputStream ois = new ObjectInputStream(s.getInputStream());
+            ObjectOutputStream clientOut = new ObjectOutputStream(new DataOutputStream(s.getOutputStream()));
+            ObjectInputStream clientIn = new ObjectInputStream(new DataInputStream(s.getInputStream()));
 
             Result<Integer, String> result = getCommand();
 
@@ -38,13 +41,13 @@ public class Client {
             String fileName = result.getResult2();
 
             // Mando al servidor la operación a realizar
-            oos.writeInt(command);
-            oos.flush();
-            while (command != RS.CLOSE_CONNECTION) {
+            clientOut.writeInt(command);
+            clientOut.flush();
+            while (command != Util.CLOSE_CONNECTION) {
 
                 // Gestión del resultado obtenido del comando
-                String message = manageCommand(command, fileName, oos, ois);
-                System.out.println(message);
+                int message = manageCommand(command, fileName, clientOut, clientIn);
+                System.out.println(translateMessage(message));
 
                 // Petición de siguiente comando
                 result = getCommand();
@@ -52,17 +55,18 @@ public class Client {
                 fileName = result.getResult2();
 
                 // Mandar el siguiente commando
-                oos.writeInt(command);
-                oos.flush();
+                clientOut.writeInt(command);
+                clientOut.flush();
             }
         }
-        catch (IOException | ClassNotFoundException e) {
-            System.out.println(e.getMessage());
+        catch (IOException | ClassNotFoundException | InterruptedException e) {
+            e.printStackTrace();
         }
         finally {
-            Server.closeResource(s);
+            closeResource(s);
         }
     }
+
 
     private static Result<Integer, String> getCommand() {
         Result<Integer, String> result = null;
@@ -75,7 +79,7 @@ public class Client {
 
             // Si el comando es Close, sale directamente
             if (command.equalsIgnoreCase("close")) {
-                return new Result<>(RS.CLOSE_CONNECTION, null);
+                return new Result<>(Util.CLOSE_CONNECTION, null);
             }
 
             // Divide el contenido de la String
@@ -96,14 +100,14 @@ public class Client {
                     case "GET":
                     case "Get":
                     case "get":
-                        result = new Result<>(RS.GET_FILE, fileName);
+                        result = new Result<>(Util.GET_FILE, fileName);
                         commandNotValid = false;
                         break;
                     case "Save":
                     case "SAVE":
                     case "save":
                         if (file.exists()) {
-                            result = new Result<>(RS.SAVE_FILE, fileName);
+                            result = new Result<>(Util.SAVE_FILE, fileName);
                             commandNotValid = false;
                         }
                         else {
@@ -113,7 +117,7 @@ public class Client {
                     case "Delete":
                     case "DELETE":
                     case "delete":
-                        result = new Result<>(RS.DELETE_FILE, fileName);
+                        result = new Result<>(Util.DELETE_FILE, fileName);
                         commandNotValid = false;
                         break;
                     default:
@@ -125,41 +129,58 @@ public class Client {
         return result;
     }
 
-    private static String manageCommand(int command, String fileName, ObjectOutputStream oos, ObjectInputStream ois) throws IOException, ClassNotFoundException {
-        String message = "";
-        switch (command) {
-            case RS.GET_FILE: {
-                oos.writeObject(fileName);
-                oos.flush();
-                RetrieverThread retrieverThread1 = new RetrieverThread(60000, path);
-                RetrieverThread retrieverThread2 = new RetrieverThread(60001, path);
 
-                message = (String) ois.readObject();
-                if (message.equals("| COMPLETED |")) {
-                    while (retrieverThread1.getResult() != RS.NOT_READY &&
-                            retrieverThread2.getResult() != RS.NOT_READY) {}
+    private static int manageCommand(int command, String fileName, ObjectOutputStream clientOut, ObjectInputStream clientIn) throws IOException, ClassNotFoundException, InterruptedException {
+        int message = NOT_READY;
+        switch (command) {
+            case GET_FILE: {
+                RetrieverThread retrieverThread1 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", Server.PORTS)), path);
+                RetrieverThread retrieverThread2 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", Server.PORTS)), path);
+
+                retrieverThread1.start();
+                retrieverThread2.start();
+
+                clientOut.writeObject(fileName);
+                clientOut.flush();
+
+                message = clientIn.readInt();
+                if (message == SUCCESS) {
+                    while (retrieverThread1.getResult() != NOT_READY &&
+                            retrieverThread2.getResult() != NOT_READY) {}
 
                     File file1 = retrieverThread1.getResultFile();
                     File file2 = retrieverThread2.getResultFile();
 
                     File finalFile = new File(path + "\\" + getCorrectFileName(file1.getName()));
                 }
-                else {
-                    message = "| FAILURE |";
-                }
+
+                retrieverThread1.interrupt();
+                retrieverThread2.interrupt();
 
                 break;
             }
-            case RS.DELETE_FILE: {
-                oos.writeObject(fileName);
-                oos.flush();
-                message = (String) ois.readObject();
+            case DELETE_FILE: {
+                clientOut.writeObject(fileName);
+                clientOut.flush();
+                message = clientIn.readInt();
                 break;
             }
-            case RS.SAVE_FILE: {
-                oos.writeObject(new File(fileName));
-                oos.flush();
-                message = (String) ois.readObject();
+            case SAVE_FILE: {
+                clientOut.writeObject(fileName);
+                clientOut.flush();
+                clientOut.writeLong(new File(fileName).length());
+                clientOut.flush();
+
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                DataInputStream fileReader = new DataInputStream(new FileInputStream(fileName));
+                while ((bytesRead = fileReader.read(buffer)) != -1) {
+                    clientOut.write(buffer, 0, bytesRead);
+                    clientOut.flush();
+                }
+                closeResource(fileReader);
+
+                message = clientIn.readInt();
                 break;
             }
         }
@@ -167,16 +188,6 @@ public class Client {
         return message;
     }
 
-    public static void depositeContent(File file1, File file2) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(file1));
-        BufferedWriter bw = new BufferedWriter(new FileWriter(file2));
-
-        String linea;
-        while ((linea = br.readLine()) != null) {
-            bw.write(linea);
-        }
-        bw.flush();
-    }
 
     private static String getCorrectFileName(String fileName) {
         String extension = Strategy.getFileNameAndExtension(fileName).getResult2();
@@ -193,5 +204,12 @@ public class Client {
         }
 
         return trueName;
+    }
+
+
+    private static void clearStream(InputStream inputStream) throws IOException {
+        while (inputStream.available() > 0) {
+            inputStream.read();
+        }
     }
 }

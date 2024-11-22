@@ -1,13 +1,17 @@
 package raid.servers;
 
+import raid.Util;
 import raid.threads.ClientManagerThread;
 import raid.servers.files.strategies.Strategy;
 import raid.threads.testers.HearingThread;
 import raid.threads.localCommunication.LocalHearerThread;
 
+import static raid.Util.closeResource;
+import static raid.Util.getProperty;
+
 import java.io.*;
 import java.net.ServerSocket;
-import java.util.Properties;
+
 
 /**
  * <p>
@@ -57,8 +61,8 @@ public abstract class Server {
      */
     protected int localCommunicationPort;
 
-    protected final static String HOSTS = "/hosts.properties";
-    protected final static String PORTS = "/ports.properties";
+    public final static String HOSTS = "/hosts.properties";
+    public final static String PORTS = "/ports.properties";
 
     public static final int WEST_TEST_PORT = Integer.parseInt(getProperty("WEST_TEST_PORT", PORTS));
     public static final int CENTRAL_TEST_PORT = Integer.parseInt(getProperty("CENTRAL_TEST_PORT", PORTS));
@@ -72,18 +76,6 @@ public abstract class Server {
     public static final String CENTRAL_HOST = getProperty("CENTRAL_HOST", HOSTS);
     public static final String EAST_HOST = getProperty("EAST_HOST", HOSTS);
 
-    private static String getProperty(String clave, String propertiesFile) {
-        String valor = null;
-        try {
-            Properties props = new Properties();
-            InputStream prIS = Server.class.getResourceAsStream(propertiesFile);
-            props.load(prIS);
-            valor = props.getProperty(clave);
-        } catch (IOException ex) {
-            System.out.println(ex.getMessage());
-        }
-        return valor;
-    }
 
     /**
      * Starts up this {@link Server} instance. It makes it wait for clients
@@ -133,22 +125,6 @@ public abstract class Server {
 
             // Cerrar el socket del servidor
             closeResource(serverSocket);
-        }
-    }
-
-    public static void closeResource(Thread thread) {
-        if (thread != null && thread.isAlive()) {
-            thread.interrupt();
-        }
-    }
-
-    public static void closeResource(Closeable closableResource) {
-        if (closableResource != null) {
-            try {
-                closableResource.close();
-            } catch (IOException e) {
-                System.out.println("| ERROR WHILE CLOSING RESOURCE " + closableResource + "|");
-            }
         }
     }
 }

@@ -2,6 +2,8 @@ package raid.threads.testers;
 
 import raid.servers.Server;
 
+import static raid.Util.*;
+
 import java.io.IOException;
 import java.net.Socket;
 
@@ -28,7 +30,7 @@ public class ConnectionTestThread extends Thread{
                 this.connectionAvailable = false;
             }
         }
-        Server.closeResource(s);
+        closeResource(s);
     }
 
     public boolean isConnectionAvailable() {

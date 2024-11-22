@@ -9,6 +9,7 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class NameRequestSenderThread extends RequestSenderThread {
+    protected String clientHost;
 
     /**
      * Builds communication with an external {@link Server} to send them
@@ -16,7 +17,7 @@ public class NameRequestSenderThread extends RequestSenderThread {
      * returns back a confirmation depending on the request.
      * @param socket {@link Socket} of the {@link Server} to contact
      * @param nameToSend Name of the {@link File} to manage
-     * @param request Integer representing the request to perform; accesible
+     * @param request Integer representing the request to perform; accessible
      *                from static instances of {@link Server}
      * @return Success message {@link String}, f.e.:
      * {@code "EXTERNAL SERVER REQUEST COMPLETED"}
@@ -25,5 +26,13 @@ public class NameRequestSenderThread extends RequestSenderThread {
     public NameRequestSenderThread(Socket socket, String nameToSend, int request) {
         super(socket, request);
         this.objectToSend = nameToSend;
+        this.clientHost = null;
+    }
+
+    public NameRequestSenderThread(Socket socket, String nameToSend, int request, String clientHost, int port) {
+        super(socket, request);
+        this.objectToSend = nameToSend;
+        this.clientHost = clientHost;
+        this.port = port;
     }
 }

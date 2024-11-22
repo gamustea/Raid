@@ -1,16 +1,19 @@
 package raid.servers.files.strategies;
 
-import raid.RS;
 import raid.servers.Server;
 import raid.threads.localCommunication.FileRequestSenderThread;
 import raid.threads.localCommunication.NameRequestSenderThread;
 import raid.threads.localCommunication.RequestSenderThread;
 import returning.Result;
 
+import static raid.Util.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 
+import static raid.Util.FILE_NOT_FOUND;
+import static raid.Util.existsFileWithName;
 import static raid.servers.files.strategies.StrategyType.East;
 
 public class PartialSavingStrategy extends Strategy {
@@ -50,8 +53,8 @@ public class PartialSavingStrategy extends Strategy {
                 localHalfFile = result.getResult1();
             }
 
-            f1 = new FileRequestSenderThread(centralServerSocket, file, RS.SAVE_FILE);
-            f2 = new FileRequestSenderThread(peripheralServerSocket, externalHalfFile, RS.SAVE_FILE);
+            f1 = new FileRequestSenderThread(centralServerSocket, file, SAVE_FILE);
+            f2 = new FileRequestSenderThread(peripheralServerSocket, externalHalfFile, SAVE_FILE);
 
             f1.start();
             f2.start();
@@ -61,23 +64,27 @@ public class PartialSavingStrategy extends Strategy {
             assert localHalfFile != null;
             selfSaveFile(localHalfFile);
 
-            return RS.FILE_STORED;
+            return FILE_STORED;
         }
         catch (IOException | InterruptedException e) {
             System.out.println(e.getMessage());
         }
         finally {
-            Server.closeResource(centralServerSocket);
-            Server.closeResource(peripheralServerSocket);
-            Server.closeResource(f1);
-            Server.closeResource(f2);
+            closeResource(centralServerSocket);
+            closeResource(peripheralServerSocket);
+            closeResource(f1);
+            closeResource(f2);
         }
 
-        return RS.CRITICAL_ERROR;
+        return CRITICAL_ERROR;
     }
 
     @Override
-    public int deleteFile(String file) {
+    public int deleteFile(String fileName) {
+        if (!existsFileWithName(fileName)) {
+            return FILE_NOT_FOUND;
+        }
+
         Socket centralServerSocket = null; Socket peripheralServerSocket = null;
         RequestSenderThread f1 = null; RequestSenderThread f2 = null;
 
@@ -86,14 +93,14 @@ public class PartialSavingStrategy extends Strategy {
 
         checkPathExistence(path); bootConnections(); waitForConnections();
 
-        int finalMessage = RS.FILE_DELETED;
+        int finalMessage = FILE_DELETED;
 
         try {
             centralServerSocket = new Socket(Server.CENTRAL_HOST, CENTRAL_LOCAL_CONNECTION_PORT);
 
             // Construye un Socket de formas distintas en función del tipo
             // de estrategia elegida en la construcción
-            Result<String, String> fileParts = getFileNameAndExtension(file);
+            Result<String, String> fileParts = getFileNameAndExtension(fileName);
             if (strategyType.equals(East)) {
                 peripheralServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
                 externalHalfFile = fileParts.getResult1() + "_1." + fileParts.getResult2();
@@ -108,26 +115,26 @@ public class PartialSavingStrategy extends Strategy {
             // Manda a cada Thread a realizar su correspondiente tarea (en este caso
             // borrar el archivo de cada servidor correspondiente). A CentralServer
             // le envío el nombre entero y al periférico, la mitad correspondiente
-            f1 = new NameRequestSenderThread(centralServerSocket, file, RS.DELETE_FILE);
-            f2 = new NameRequestSenderThread(peripheralServerSocket, externalHalfFile, RS.DELETE_FILE);
+            f1 = new NameRequestSenderThread(centralServerSocket, fileName, DELETE_FILE);
+            f2 = new NameRequestSenderThread(peripheralServerSocket, externalHalfFile, DELETE_FILE);
 
             f1.start();
             f2.start();
             f1.join();
             f2.join();
 
-            if (!(f1.getResult() == RS.SUCCESS) || !(f2.getResult() == RS.SUCCESS)) {
-                finalMessage = RS.CRITICAL_ERROR;
+            if (!(f1.getResult() == SUCCESS) || !(f2.getResult() == SUCCESS)) {
+                finalMessage = CRITICAL_ERROR;
             }
         }
         catch (IOException | InterruptedException e) {
             System.out.println(e.getMessage());
         }
         finally {
-            Server.closeResource(centralServerSocket);
-            Server.closeResource(peripheralServerSocket);
-            Server.closeResource(f1);
-            Server.closeResource(f2);
+            closeResource(centralServerSocket);
+            closeResource(peripheralServerSocket);
+            closeResource(f1);
+            closeResource(f2);
         }
         selfDeleteFile(localHalfFile);
 
@@ -135,7 +142,11 @@ public class PartialSavingStrategy extends Strategy {
     }
 
     @Override
-    public int getFile(String file, String clientHost) {
+    public int getFile(String fileName, String clientHost) {
+        if (!existsFileWithName(fileName)) {
+            return FILE_NOT_FOUND;
+        }
+
         return 0;
     }
 }

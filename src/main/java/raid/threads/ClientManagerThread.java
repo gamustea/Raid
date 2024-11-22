@@ -1,12 +1,15 @@
 package raid.threads;
 
-import raid.RS;
+import raid.Util;
 import raid.servers.files.FileManager;
 import raid.servers.Server;
 import raid.servers.files.strategies.Strategy;
 
+import static raid.Util.*;
+
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
 
 /**
  * {@link Thread} with the purpose of managing user requests, such as deleting,
@@ -19,6 +22,7 @@ public class ClientManagerThread extends Thread {
     private final Socket clientSocket;
     private final FileManager fileManager;
     private final String clientHost;
+    private final String temporalPath = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Auxiliar";
 
     /**
      * Builds a specialized {@link Thread} instance, by allowing the communication
@@ -59,57 +63,63 @@ public class ClientManagerThread extends Thread {
             System.out.println(clientSocket.getInetAddress() + " has connected");
 
             // Abre streams para comunicarse con el cliente, usando su socket
-            ObjectOutputStream oos = new ObjectOutputStream(clientSocket.getOutputStream());
-            ObjectInputStream ois = new ObjectInputStream(clientSocket.getInputStream());
+            ObjectOutputStream serverOut = new ObjectOutputStream(clientSocket.getOutputStream());
+            ObjectInputStream serverIn = new ObjectInputStream(new BufferedInputStream(clientSocket.getInputStream()));
 
             // Recibe el comando, y si es "CLOSE", directamente lo descarta
-            int command = ois.readInt();
-            while (command != RS.CLOSE_CONNECTION) {
-                File file;
-                String fileName;
+            int command = serverIn.readInt();
+            while (command != Util.CLOSE_CONNECTION) {
+                String fileNameReceived = (String) serverIn.readObject();
 
                 // Filtra por el tipo de comando recibido y ejecuta el método correspondiente
                 // según el Strategy insertado en el FileManager durante la construcción
-                int message = RS.NOT_READY;
+                int message = Util.NOT_READY;
                 switch(command) {
-                    case RS.GET_FILE: {
-
-                        // Recibe del cliente el nombre del archivo que quiere recibir
-                        fileName = (String) ois.readObject();
-
+                    case GET_FILE: {
                         // Le devuelve al cliente el resultado de la operación de obtención
-                        message = fileManager.getFile(fileName, clientHost);
+                        message = fileManager.getFile(fileNameReceived, clientHost);
                         break;
                     }
-                    case RS.SAVE_FILE: {
+                    case SAVE_FILE: {
+                        long fileSize = serverIn.readLong();
+                        File file = new File(temporalPath + "\\" + fileNameReceived);
+                        if (!file.exists()) {
+                            Files.createFile(file.toPath());
+                        }
 
-                        // Recibe del cliente el objeto File que quiere guardar
-                        file = (File) ois.readObject();
+                        // Escribir en un archivo local lo que venga del cliente
+                        DataOutputStream fileWriter = new DataOutputStream(new FileOutputStream(file));
+
+                        byte[] buffer = new byte[(int) fileSize];
+                        int bytesRead= serverIn.read(buffer, 0, (int) fileSize);
+
+                        fileWriter.write(buffer, 0, bytesRead);
+                        fileWriter.flush();
+
+                        closeResource(fileWriter);
 
                         // Devuelve al cliente el resultado de realizar la operación
                         message = fileManager.saveFile(file);
                         break;
                     }
-                    case RS.DELETE_FILE: {
-                        fileName = (String) ois.readObject();
-                        message = fileManager.deleteFile(fileName);
+                    case DELETE_FILE: {
+                        message = fileManager.deleteFile(fileNameReceived);
                         break;
                     }
                 }
 
                 // Mandar el resultado de la operación al cliente
-                // TODO: HACER QUE SE MANDE UN MENSAJE EN FUNCIÓN DEL MENSAJE RECIBIDO
-                oos.writeObject("| COMPLETED |");
-                oos.flush();
-                command = ois.readInt();
+                serverOut.writeInt(message);
+                serverOut.flush();
+                command = serverIn.readInt();
             }
         }
         catch (ClassNotFoundException | IOException e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
         finally {
             System.out.println("| Client closed |");
-            Server.closeResource(clientSocket);
+            closeResource(clientSocket);
         }
     }
 }

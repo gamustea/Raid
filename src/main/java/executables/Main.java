@@ -8,6 +8,7 @@ import raid.servers.WestServer;
 
 public class Main {
     public static void main(String[] args) {
+
         ServerExecution se1 = new ServerExecution(new CentralServer());
         ServerExecution se2 = new ServerExecution(new EastServer());
         ServerExecution se3 = new ServerExecution(new WestServer());
@@ -16,6 +17,6 @@ public class Main {
         se2.start();
         se3.start();
 
-        new Client("localhost", Server.WEST_CLIENT_PORT).boot();
+        new Client("localhost", Server.CENTRAL_CLIENT_PORT).boot();
     }
 }

@@ -2,6 +2,8 @@ package raid.threads.testers;
 
 import raid.servers.Server;
 
+import static raid.Util.*;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 
@@ -23,15 +25,15 @@ public class HearingThread extends Thread{
                     ss.accept();
                 }
                 catch (IOException e) {
-                    e.printStackTrace();
+                    System.out.println(e.getMessage());
                 }
             }
         }
         catch (IOException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         finally {
-            Server.closeResource(ss);
+            closeResource(ss);
         }
     }
 }

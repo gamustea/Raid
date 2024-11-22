@@ -1,17 +1,21 @@
 package raid.servers.files.strategies;
 
-import raid.RS;
+import raid.Util;
 import raid.servers.Server;
 import raid.servers.WestServer;
 import raid.threads.testers.ConnectionTestThread;
 import returning.Result;
 
 import java.io.*;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Properties;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-import static java.lang.Thread.sleep;
+import static raid.Util.*;
+
 
 public abstract class Strategy {
     protected ConnectionTestThread connectionTestLeft;
@@ -19,9 +23,12 @@ public abstract class Strategy {
     protected Path path;
     protected StrategyType strategyType;
 
-    protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT"));
-    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT"));
-    protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT"));
+    protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(
+            getProperty("WEST_LOCAL_CONNECTION_PORT", Server.PORTS));
+    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(
+            getProperty("CENTRAL_LOCAL_CONNECTION_PORT", Server.PORTS));
+    protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(
+            getProperty("EAST_LOCAL_CONNECTION_PORT", Server.PORTS));
 
     public abstract int saveFile(File file);
     public abstract int deleteFile(String file);
@@ -30,40 +37,7 @@ public abstract class Strategy {
     protected Strategy(String pathName, StrategyType strategyType) {
         path = Path.of(pathName);
         checkPathExistence(path);
-
-        this.strategyType = strategyType;
-
-        switch (strategyType) {
-            case StrategyType.Central: {
-                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
-                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
-                break;
-            }
-            case StrategyType.East: {
-                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
-                this.connectionTestRight = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
-            }
-            case StrategyType.West: {
-                this.connectionTestLeft = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
-                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
-                break;
-            }
-        }
-    }
-
-
-    private static String getProperty(String clave) {
-        String valor = null;
-        try {
-            Properties props = new Properties();
-            InputStream prIS = Server.class.getResourceAsStream("/ports.properties");
-            props.load(prIS);
-            valor = props.getProperty(clave);
-        }
-        catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        return valor;
+        selectLocalConnections(strategyType);
     }
 
 
@@ -87,16 +61,17 @@ public abstract class Strategy {
             if (bis.read(buffer) != -1) {
                 bos.write(buffer);
             }
+            bos.flush();
         }
         catch(IOException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         finally {
-            Server.closeResource(bis);
-            Server.closeResource(bos);
+            Util.closeResource(bis);
+            Util.closeResource(bos);
         }
 
-        return RS.FILE_STORED;
+        return Util.FILE_STORED;
     }
 
 
@@ -112,17 +87,36 @@ public abstract class Strategy {
 
         if (fileToDelete.exists()) {
             if (fileToDelete.delete()) {
-                return RS.FILE_DELETED;
+                return Util.FILE_DELETED;
             }
-            return RS.CRITICAL_ERROR;
+            return Util.CRITICAL_ERROR;
         }
 
-        return RS.FILE_NOT_FOUND;
+        return Util.FILE_NOT_FOUND;
     }
 
 
-    public int selfGetFile(String file, String clientHost) {
-        return 0;
+    public int selfGetFile(String fileName, String clientHost, int port) {
+        Socket socket = null;
+        int message = NOT_READY;
+
+        try {
+            socket = new Socket("localhost", port);
+            ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+
+            oos.writeObject(new File(path + "\\" + fileName));
+            oos.flush();
+
+            message = FILE_RETRIEVED;
+        }
+        catch (IOException e) {
+            message = CRITICAL_ERROR;
+        }
+        finally {
+            closeResource(socket);
+        }
+
+        return message;
     }
 
 
@@ -184,12 +178,12 @@ public abstract class Strategy {
             result = new Result<>(file1, file2);
         }
         catch (IOException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         finally {
-            Server.closeResource(bis);
-            Server.closeResource(bos1);
-            Server.closeResource(bos2);
+            Util.closeResource(bis);
+            Util.closeResource(bos1);
+            Util.closeResource(bos2);
         }
 
         return result;
@@ -256,18 +250,24 @@ public abstract class Strategy {
     }
 
 
-    /**
-     * Checks that the given path exists in the current host. If it does not,
-     * method creates it in the given.
-     * @param path {@link Path} to check
-     */
-    protected static void checkPathExistence(Path path) {
-        try {
-            if (!Files.exists(path)) {
-                Files.createDirectory(path);
+    private void selectLocalConnections(StrategyType strategyType) {
+        this.strategyType = strategyType;
+
+        switch (strategyType) {
+            case StrategyType.Central: {
+                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
+                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
+                break;
             }
-        } catch (IOException e) {
-            System.out.println("Error while creating " + path);
+            case StrategyType.East: {
+                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
+                this.connectionTestRight = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
+            }
+            case StrategyType.West: {
+                this.connectionTestLeft = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
+                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
+                break;
+            }
         }
     }
 }

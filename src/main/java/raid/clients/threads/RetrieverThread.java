@@ -1,22 +1,24 @@
 package raid.clients.threads;
 
-import raid.RS;
+import static raid.Util.*;
 import raid.clients.Client;
-import raid.servers.Server;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class RetrieverThread extends Thread {
     private final ServerSocket listenerSocket;
     private final String path;
-    private int result = RS.NOT_READY;
+    private int result = NOT_READY;
     private File resultFile = null;
 
     public RetrieverThread(int port, String path) throws IOException {
         listenerSocket = new ServerSocket(port);
         this.path = path;
+        checkPathExistence(Paths.get(path));
     }
 
     @Override
@@ -24,22 +26,26 @@ public class RetrieverThread extends Thread {
         ObjectInputStream oos = null;
 
         try {
+            // Recibe la petición de uno de los servidores
             Socket socket = listenerSocket.accept();
             oos = new ObjectInputStream(socket.getInputStream());
 
+            // Obtiene el fichero del servidor y lo trata
             File fileToStore = (File) oos.readObject();
             File storedFile = new File(path + "\\" + fileToStore.getName());
+            if (!storedFile.exists()) {
+                Files.createFile(storedFile.toPath());
+            }
 
-            Client.depositeContent(fileToStore, storedFile);
-
-
-            result = RS.FILE_STORED;
+            depositContent(storedFile, fileToStore);
+            resultFile = storedFile;
+            result = FILE_STORED;
         }
         catch (IOException | ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
         finally {
-            Server.closeResource(oos);
+            closeResource(oos);
         }
     }
 
@@ -48,6 +54,7 @@ public class RetrieverThread extends Thread {
     }
 
     public File getResultFile() {
+        this.interrupt();
         return resultFile;
     }
 }

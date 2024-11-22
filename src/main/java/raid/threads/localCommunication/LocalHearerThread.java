@@ -1,6 +1,6 @@
 package raid.threads.localCommunication;
 
-import raid.RS;
+import raid.Util;
 import raid.servers.*;
 import raid.servers.files.strategies.*;
 
@@ -24,7 +24,7 @@ public class LocalHearerThread extends Thread {
         ServerSocket ss = null;
         try {
             ss = new ServerSocket(port);
-            while (true) {
+            while (this.isAlive()) {
                 try {
                     s = ss.accept();
 
@@ -32,27 +32,36 @@ public class LocalHearerThread extends Thread {
                     ObjectOutputStream oos = new ObjectOutputStream(s.getOutputStream());
 
                     int command = ois.readInt();
-                    int message = -1;
-                    if (command == RS.SAVE_FILE) {
-                        File file = (File) ois.readObject();
-                        message = strategy.selfSaveFile(file);
+                    int message = Util.NOT_READY;
+
+                    switch (command) {
+                        case Util.SAVE_FILE: {
+                            File file = (File) ois.readObject();
+                            message = strategy.selfSaveFile(file);
+                            break;
+                        }
+                        case Util.GET_FILE: {
+                            String fileName = (String) ois.readObject();
+                            String clientHost = (String) ois.readObject();
+                            int clientPort = ois.readInt();
+                            message = strategy.selfGetFile(fileName, clientHost, clientPort);
+                            break;
+                        }
+                        case Util.DELETE_FILE: {
+                            String fileName = (String) ois.readObject();
+                            message = strategy.selfDeleteFile(fileName);
+                            break;
+                        }
                     }
-                    if (command == RS.GET_FILE) {
-                        String fileName = (String) ois.readObject();
-                        message = strategy.selfGetFile(fileName);
-                    }
-                    if (command == RS.DELETE_FILE) {
-                        String fileName = (String) ois.readObject();
-                        message = strategy.selfDeleteFile(fileName);
-                    }
+
                     oos.writeInt(message);
                     oos.flush();
                 }
                 catch (ClassNotFoundException | IOException e) {
-                    e.printStackTrace();
+                    System.out.println(e.getMessage());
                 }
                 finally {
-                    Server.closeResource(s);
+                    Util.closeResource(s);
                 }
             }
         }
@@ -60,7 +69,7 @@ public class LocalHearerThread extends Thread {
             throw new RuntimeException(e);
         }
         finally {
-            Server.closeResource(ss);
+            Util.closeResource(ss);
         }
     }
 }
