@@ -1,7 +1,6 @@
 package raid.threads;
 
 import raid.Util;
-import raid.servers.files.FileManager;
 import raid.servers.Server;
 import raid.servers.files.strategies.Strategy;
 
@@ -20,7 +19,7 @@ import java.nio.file.Files;
  */
 public class ClientManagerThread extends Thread {
     private final Socket clientSocket;
-    private final FileManager fileManager;
+    private final Strategy strategy;
     private final String clientHost;
     private final String temporalPath = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Auxiliar";
 
@@ -33,7 +32,7 @@ public class ClientManagerThread extends Thread {
      */
     public ClientManagerThread(Socket socket, Strategy strategy) {
         this.clientSocket = socket;
-        this.fileManager = new FileManager(strategy);
+        this.strategy = strategy;
         this.clientHost = socket.getInetAddress().getCanonicalHostName();
     }
 
@@ -77,7 +76,7 @@ public class ClientManagerThread extends Thread {
                 switch(command) {
                     case GET_FILE: {
                         // Le devuelve al cliente el resultado de la operación de obtención
-                        message = fileManager.getFile(fileNameReceived, clientHost);
+                        message = strategy.getFile(fileNameReceived, clientHost);
                         break;
                     }
                     case SAVE_FILE: {
@@ -99,11 +98,11 @@ public class ClientManagerThread extends Thread {
                         closeResource(fileWriter);
 
                         // Devuelve al cliente el resultado de realizar la operación
-                        message = fileManager.saveFile(file);
+                        message = strategy.saveFile(file);
                         break;
                     }
                     case DELETE_FILE: {
-                        message = fileManager.deleteFile(fileNameReceived);
+                        message = strategy.deleteFile(fileNameReceived);
                         break;
                     }
                 }
@@ -115,7 +114,7 @@ public class ClientManagerThread extends Thread {
             }
         }
         catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
+            System.out.println(e.getMessage());
         }
         finally {
             System.out.println("| Client closed |");
