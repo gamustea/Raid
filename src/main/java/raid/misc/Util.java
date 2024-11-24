@@ -1,4 +1,4 @@
-package raid;
+package raid.misc;
 
 import raid.servers.Server;
 

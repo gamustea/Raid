@@ -1,10 +1,10 @@
-package raid.threads;
+package raid.servers.threads;
 
-import raid.Util;
+import raid.misc.Util;
 import raid.servers.Server;
-import raid.servers.files.strategies.Strategy;
+import raid.servers.files.Strategy;
 
-import static raid.Util.*;
+import static raid.misc.Util.*;
 
 import java.io.*;
 import java.net.Socket;
@@ -21,7 +21,6 @@ public class ClientManagerThread extends Thread {
     private final Socket clientSocket;
     private final Strategy strategy;
     private final String clientHost;
-    private final String temporalPath = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Auxiliar";
 
     /**
      * Builds a specialized {@link Thread} instance, by allowing the communication
@@ -63,7 +62,7 @@ public class ClientManagerThread extends Thread {
 
             // Abre streams para comunicarse con el cliente, usando su socket
             ObjectOutputStream serverOut = new ObjectOutputStream(clientSocket.getOutputStream());
-            ObjectInputStream serverIn = new ObjectInputStream(new BufferedInputStream(clientSocket.getInputStream()));
+            ObjectInputStream serverIn = new ObjectInputStream(clientSocket.getInputStream());
 
             // Recibe el comando, y si es "CLOSE", directamente lo descarta
             int command = serverIn.readInt();
@@ -80,20 +79,22 @@ public class ClientManagerThread extends Thread {
                         break;
                     }
                     case SAVE_FILE: {
-                        long fileSize = serverIn.readLong();
+                        String temporalPath = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Auxiliar";
                         File file = new File(temporalPath + "\\" + fileNameReceived);
                         if (!file.exists()) {
                             Files.createFile(file.toPath());
                         }
 
                         // Escribir en un archivo local lo que venga del cliente
-                        DataOutputStream fileWriter = new DataOutputStream(new FileOutputStream(file));
+                        FileOutputStream fileWriter = new FileOutputStream(file);
 
-                        byte[] buffer = new byte[(int) fileSize];
-                        int bytesRead= serverIn.read(buffer, 0, (int) fileSize);
-
-                        fileWriter.write(buffer, 0, bytesRead);
-                        fileWriter.flush();
+                        serverIn = new ObjectInputStream(clientSocket.getInputStream());
+                        byte[] buffer = new byte[1024];
+                        int bytesRead;
+                        while ((bytesRead = serverIn.read(buffer)) != -1) {
+                            fileWriter.write(buffer, 0, bytesRead);
+                            fileWriter.flush();
+                        }
 
                         closeResource(fileWriter);
 
@@ -119,6 +120,12 @@ public class ClientManagerThread extends Thread {
         finally {
             System.out.println("| Client closed |");
             closeResource(clientSocket);
+        }
+    }
+
+    public static void clearStream(InputStream inputStream) throws IOException {
+        while (inputStream.read() != -1) {
+            // Consume los datos (puedes descartarlos o procesarlos)
         }
     }
 }

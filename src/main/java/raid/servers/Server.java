@@ -1,13 +1,12 @@
 package raid.servers;
 
-import raid.Util;
-import raid.threads.ClientManagerThread;
-import raid.servers.files.strategies.Strategy;
-import raid.threads.testers.HearingThread;
-import raid.threads.localCommunication.LocalHearerThread;
+import raid.servers.threads.ClientManagerThread;
+import raid.servers.files.Strategy;
+import raid.servers.threads.testers.HearingThread;
+import raid.servers.threads.localCommunication.LocalHearerThread;
 
-import static raid.Util.closeResource;
-import static raid.Util.getProperty;
+import static raid.misc.Util.closeResource;
+import static raid.misc.Util.getProperty;
 
 import java.io.*;
 import java.net.ServerSocket;

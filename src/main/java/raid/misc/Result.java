@@ -1,4 +1,4 @@
-package returning;
+package raid.misc;
 
 public class Result<E, T> {
     private E result1;

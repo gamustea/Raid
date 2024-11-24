@@ -1,13 +1,13 @@
-package raid.threads.localCommunication;
+package raid.servers.threads.localCommunication;
 
-import raid.Util;
+import raid.misc.Util;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
-import static raid.Util.*;
+import static raid.misc.Util.*;
 
 
 public abstract class RequestSenderThread extends Thread{

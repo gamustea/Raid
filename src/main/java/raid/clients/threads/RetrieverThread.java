@@ -1,7 +1,6 @@
 package raid.clients.threads;
 
-import static raid.Util.*;
-import raid.clients.Client;
+import static raid.misc.Util.*;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -10,34 +9,48 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class RetrieverThread extends Thread {
-    private final ServerSocket listenerSocket;
+    private ServerSocket listenerSocket;
     private final String path;
     private int result = NOT_READY;
     private File resultFile = null;
 
     public RetrieverThread(int port, String path) throws IOException {
-        listenerSocket = new ServerSocket(port);
+        if (this.listenerSocket == null) {
+            listenerSocket = new ServerSocket(port);
+        }
         this.path = path;
         checkPathExistence(Paths.get(path));
     }
 
     @Override
     public void run() {
-        ObjectInputStream oos = null;
+        ObjectInputStream ois = null;
+        FileOutputStream fileWriter = null;
+        Socket socket = null;
 
         try {
             // Recibe la petición de uno de los servidores
-            Socket socket = listenerSocket.accept();
-            oos = new ObjectInputStream(socket.getInputStream());
+            socket = listenerSocket.accept();
+            ois = new ObjectInputStream(socket.getInputStream());
 
             // Obtiene el fichero del servidor y lo trata
-            File fileToStore = (File) oos.readObject();
+            File fileToStore = (File) ois.readObject();
             File storedFile = new File(path + "\\" + fileToStore.getName());
-            if (!storedFile.exists()) {
-                Files.createFile(storedFile.toPath());
+
+            long fileSize = ois.readLong();
+            if (fileSize != -1) {
+                if (!storedFile.exists()) {
+                    Files.createFile(storedFile.toPath());
+                }
+
+                fileWriter = new FileOutputStream(storedFile);
+                byte[] buffer = new byte[(int) fileSize];
+
+                int bytesRead = ois.read(buffer, 0, (int) fileSize);
+                fileWriter.write(buffer);
+                fileWriter.flush();
             }
 
-            depositContent(storedFile, fileToStore);
             resultFile = storedFile;
             result = FILE_STORED;
         }
@@ -45,7 +58,10 @@ public class RetrieverThread extends Thread {
             throw new RuntimeException(e);
         }
         finally {
-            closeResource(oos);
+            closeResource(listenerSocket);
+            closeResource(socket);
+            closeResource(ois);
+            closeResource(fileWriter);
         }
     }
 
@@ -54,7 +70,12 @@ public class RetrieverThread extends Thread {
     }
 
     public File getResultFile() {
-        this.interrupt();
         return resultFile;
+    }
+
+    public void closeResources() {
+        closeResource(listenerSocket);
+        listenerSocket = null;
+        this.interrupt();
     }
 }

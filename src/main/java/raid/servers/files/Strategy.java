@@ -1,20 +1,16 @@
-package raid.servers.files.strategies;
+package raid.servers.files;
 
-import raid.Util;
+import raid.misc.Util;
 import raid.servers.Server;
 import raid.servers.WestServer;
-import raid.threads.testers.ConnectionTestThread;
-import returning.Result;
+import raid.servers.threads.testers.ConnectionTestThread;
+import raid.misc.Result;
 
 import java.io.*;
 import java.net.Socket;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
-import static raid.Util.*;
+import static raid.misc.Util.*;
 
 
 public abstract class Strategy {
@@ -99,14 +95,36 @@ public abstract class Strategy {
     public int selfGetFile(String fileName, String clientHost, int port) {
         Socket socket = null;
         int message = NOT_READY;
+        ObjectOutputStream oos = null;
 
         try {
-            socket = new Socket("localhost", port);
-            ObjectOutputStream oos = new ObjectOutputStream(socket.getOutputStream());
+            boolean notConnected = true;
+            while (notConnected) {
+                try {
+                    socket = new Socket("localhost", port);
+                    notConnected = false;
+                } catch (IOException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+            oos = new ObjectOutputStream(socket.getOutputStream());
 
-            oos.writeObject(new File(path + "\\" + fileName));
+            File fileToRetrieve = new File(path + "\\" + fileName);
+            long fileLength = fileToRetrieve.length();
+
+            oos.writeObject(fileToRetrieve);
+            oos.flush();
+            oos.writeLong(fileLength);
             oos.flush();
 
+            byte[] buffer = new byte[(int) fileLength];
+            FileInputStream fileReader = new FileInputStream(fileToRetrieve);
+            if (fileReader.read(buffer, 0, (int) fileLength) != -1) {
+                oos.write(buffer);
+                oos.flush();
+            }
+
+            closeResource(fileReader);
             message = FILE_RETRIEVED;
         }
         catch (IOException e) {
@@ -114,6 +132,7 @@ public abstract class Strategy {
         }
         finally {
             closeResource(socket);
+            closeResource(oos);
         }
 
         return message;
@@ -254,16 +273,16 @@ public abstract class Strategy {
         this.strategyType = strategyType;
 
         switch (strategyType) {
-            case StrategyType.Central: {
+            case Central: {
                 this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
                 this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
                 break;
             }
-            case StrategyType.East: {
+            case East: {
                 this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
                 this.connectionTestRight = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
             }
-            case StrategyType.West: {
+            case West: {
                 this.connectionTestLeft = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
                 this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
                 break;

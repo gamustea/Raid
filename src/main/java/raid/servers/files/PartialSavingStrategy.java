@@ -1,20 +1,20 @@
-package raid.servers.files.strategies;
+package raid.servers.files;
 
 import raid.servers.Server;
-import raid.threads.localCommunication.FileRequestSenderThread;
-import raid.threads.localCommunication.NameRequestSenderThread;
-import raid.threads.localCommunication.RequestSenderThread;
-import returning.Result;
+import raid.servers.threads.localCommunication.FileRequestSenderThread;
+import raid.servers.threads.localCommunication.NameRequestSenderThread;
+import raid.servers.threads.localCommunication.RequestSenderThread;
+import raid.misc.Result;
 
-import static raid.Util.*;
+import static raid.misc.Util.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
 
-import static raid.Util.FILE_NOT_FOUND;
-import static raid.Util.existsFileWithName;
-import static raid.servers.files.strategies.StrategyType.East;
+import static raid.misc.Util.FILE_NOT_FOUND;
+import static raid.misc.Util.existsFileWithName;
+import static raid.servers.files.StrategyType.East;
 
 public class PartialSavingStrategy extends Strategy {
     public PartialSavingStrategy(String path, StrategyType strategyType) {

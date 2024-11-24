@@ -1,11 +1,11 @@
-package raid.servers.files.strategies;
+package raid.servers.files;
 
-import static raid.Util.*;
+import static raid.misc.Util.*;
 import raid.servers.Server;
-import raid.threads.localCommunication.FileRequestSenderThread;
-import raid.threads.localCommunication.NameRequestSenderThread;
-import raid.threads.localCommunication.RequestSenderThread;
-import returning.Result;
+import raid.servers.threads.localCommunication.FileRequestSenderThread;
+import raid.servers.threads.localCommunication.NameRequestSenderThread;
+import raid.servers.threads.localCommunication.RequestSenderThread;
+import raid.misc.Result;
 
 import java.io.*;
 import java.net.Socket;

@@ -1,8 +1,8 @@
 package raid.servers;
 
-import raid.servers.files.strategies.PartialSavingStrategy;
+import raid.servers.files.PartialSavingStrategy;
 
-import static raid.servers.files.strategies.StrategyType.West;
+import static raid.servers.files.StrategyType.West;
 
 /**
  * Instance of {@link Server}. Follows a {@link PartialSavingStrategy},

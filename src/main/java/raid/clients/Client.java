@@ -1,17 +1,18 @@
 package raid.clients;
 
-import raid.Util;
+import raid.misc.Util;
 import raid.clients.threads.RetrieverThread;
 import raid.servers.Server;
-import raid.servers.files.strategies.Strategy;
-import returning.Result;
+import raid.servers.files.Strategy;
+import raid.misc.Result;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.Arrays;
 import java.util.Scanner;
 
 import static java.lang.Thread.sleep;
-import static raid.Util.*;
+import static raid.misc.Util.*;
 
 
 public class Client {
@@ -32,8 +33,8 @@ public class Client {
             s = new Socket(host, port);
             System.out.println("| Connection successful |");
 
-            ObjectOutputStream clientOut = new ObjectOutputStream(new DataOutputStream(s.getOutputStream()));
-            ObjectInputStream clientIn = new ObjectInputStream(new DataInputStream(s.getInputStream()));
+            ObjectOutputStream clientOut = new ObjectOutputStream(s.getOutputStream());
+            ObjectInputStream clientIn = new ObjectInputStream(s.getInputStream());
 
             Result<Integer, String> result = getCommand();
 
@@ -132,30 +133,46 @@ public class Client {
 
     private static int manageCommand(int command, String fileName, ObjectOutputStream clientOut, ObjectInputStream clientIn) throws IOException, ClassNotFoundException, InterruptedException {
         int message = NOT_READY;
+
         switch (command) {
             case GET_FILE: {
                 RetrieverThread retrieverThread1 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", Server.PORTS)), path);
                 RetrieverThread retrieverThread2 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", Server.PORTS)), path);
 
-                retrieverThread1.start();
-                retrieverThread2.start();
-
                 clientOut.writeObject(fileName);
                 clientOut.flush();
 
                 message = clientIn.readInt();
-                if (message == SUCCESS) {
-                    while (retrieverThread1.getResult() != NOT_READY &&
-                            retrieverThread2.getResult() != NOT_READY) {}
+                if (message == FILE_RETRIEVED) {
+                    retrieverThread1.start();
+                    retrieverThread2.start();
+
+                    boolean notReady1 = retrieverThread1.getResult() == NOT_READY;
+                    boolean notReady2 = retrieverThread1.getResult() == NOT_READY;
+                    int loopCount = 0;
+                    while (notReady1 || notReady2) {
+                        notReady1 = retrieverThread1.getResult() == NOT_READY;
+                        notReady2 = retrieverThread1.getResult() == NOT_READY;
+                        if (loopCount == 0) {
+                            System.out.println("| THREADS NOT READY |");
+                        }
+                        loopCount++;
+                    }
+                    System.out.println("| THREADS NOT READY |");
 
                     File file1 = retrieverThread1.getResultFile();
                     File file2 = retrieverThread2.getResultFile();
 
                     File finalFile = new File(path + "\\" + getCorrectFileName(file1.getName()));
-                }
 
-                retrieverThread1.interrupt();
-                retrieverThread2.interrupt();
+                    mergeFiles(file1, file2, finalFile);
+                    file1.delete();
+                    file2.delete();
+                }
+                else {
+                    retrieverThread1.closeResources();
+                    retrieverThread2.closeResources();
+                }
 
                 break;
             }
@@ -168,18 +185,16 @@ public class Client {
             case SAVE_FILE: {
                 clientOut.writeObject(fileName);
                 clientOut.flush();
-                clientOut.writeLong(new File(fileName).length());
-                clientOut.flush();
 
                 byte[] buffer = new byte[1024];
                 int bytesRead;
-                DataInputStream fileReader = new DataInputStream(new FileInputStream(fileName));
+                FileInputStream fileReader = new FileInputStream(fileName);
                 while ((bytesRead = fileReader.read(buffer)) != -1) {
                     clientOut.write(buffer, 0, bytesRead);
                     clientOut.flush();
                 }
-                closeResource(fileReader);
 
+                closeResource(fileReader);
                 message = clientIn.readInt();
                 break;
             }
@@ -191,25 +206,40 @@ public class Client {
 
     private static String getCorrectFileName(String fileName) {
         String extension = Strategy.getFileNameAndExtension(fileName).getResult2();
-        String trueName = "";
+        String trueName;
 
         String[] parts1 = fileName.split("_1");
         String[] parts2 = fileName.split("_2");
 
         if (parts1.length == 2) {
-            trueName = parts1[0] + extension;
+            trueName = parts1[0] + "." + extension;
         }
         else {
-            trueName = parts2[0] + extension;
+            trueName = parts2[0] + "." + extension;
         }
 
         return trueName;
     }
 
 
-    private static void clearStream(InputStream inputStream) throws IOException {
-        while (inputStream.available() > 0) {
-            inputStream.read();
+    private static void mergeFiles(File file1, File file2, File destination) throws IOException {
+        try (BufferedOutputStream fileWriter = new BufferedOutputStream(new FileOutputStream(destination))) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+
+            // Copiar contenido del primer archivo
+            try (BufferedInputStream fileReader = new BufferedInputStream(new FileInputStream(file1))) {
+                while ((bytesRead = fileReader.read(buffer)) != -1) {
+                    fileWriter.write(buffer, 0, bytesRead);
+                }
+            }
+
+            // Copiar contenido del segundo archivo
+            try (BufferedInputStream fileReader = new BufferedInputStream(new FileInputStream(file2))) {
+                while ((bytesRead = fileReader.read(buffer)) != -1) {
+                    fileWriter.write(buffer, 0, bytesRead);
+                }
+            }
         }
     }
 }

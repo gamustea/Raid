@@ -1,8 +1,7 @@
-package raid.threads.localCommunication;
+package raid.servers.threads.localCommunication;
 
-import raid.Util;
-import raid.servers.*;
-import raid.servers.files.strategies.*;
+import raid.misc.Util;
+import raid.servers.files.Strategy;
 
 import java.io.*;
 import java.net.ServerSocket;

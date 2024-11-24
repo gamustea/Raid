@@ -1,7 +1,7 @@
 package raid.servers;
 
-import raid.servers.files.strategies.FullSavingStrategy;
-import static raid.Util.getProperty;
+import raid.servers.files.FullSavingStrategy;
+import static raid.misc.Util.getProperty;
 
 /**
  * Instance of {@link Server}. Follows a {@link FullSavingStrategy},

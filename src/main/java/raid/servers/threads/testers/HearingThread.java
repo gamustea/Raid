@@ -1,8 +1,6 @@
-package raid.threads.testers;
+package raid.servers.threads.testers;
 
-import raid.servers.Server;
-
-import static raid.Util.*;
+import static raid.misc.Util.*;
 
 import java.io.IOException;
 import java.net.ServerSocket;
