@@ -20,7 +20,7 @@ public class Client {
     private final int port;
     private static final String path = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Client";
 
-    public Client(String host, int port) {
+    public Client(String host, int port) throws IOException {
         this.host = host;
         this.port = port;
     }
@@ -131,7 +131,7 @@ public class Client {
     }
 
 
-    private static int manageCommand(int command, String fileName, ObjectOutputStream clientOut, ObjectInputStream clientIn) throws IOException, ClassNotFoundException, InterruptedException {
+    private int manageCommand(int command, String fileName, ObjectOutputStream clientOut, ObjectInputStream clientIn) throws IOException, ClassNotFoundException, InterruptedException {
         int message = NOT_READY;
 
         switch (command) {
@@ -139,29 +139,36 @@ public class Client {
                 RetrieverThread retrieverThread1 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", Server.PORTS)), path);
                 RetrieverThread retrieverThread2 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", Server.PORTS)), path);
 
+                retrieverThread1.start();
+                retrieverThread2.start();
+
                 clientOut.writeObject(fileName);
                 clientOut.flush();
 
                 message = clientIn.readInt();
                 if (message == FILE_RETRIEVED) {
-                    retrieverThread1.start();
-                    retrieverThread2.start();
-
                     retrieverThread1.join();
                     retrieverThread2.join();
 
-                    File file1 = retrieverThread1.getResultFile();
-                    File file2 = retrieverThread2.getResultFile();
+                    Result<String, String> result = getFileNameAndExtension(fileName);
+
+                    File file1 = new File(path + "\\" + result.getResult1() + "_1." + result.getResult2());
+                    File file2 = new File(path + "\\" + result.getResult1() + "_2." + result.getResult2());
 
                     File finalFile = new File(path + "\\" + getCorrectFileName(file1.getName()));
 
                     mergeFiles(file1, file2, finalFile);
-                }
-                else {
-                    retrieverThread1.closeResources();
-                    retrieverThread2.closeResources();
+
+                    if (file1.exists()) {
+                        file1.delete();
+                    }
+                    if (file2.exists()) {
+                        file2.delete();
+                    }
                 }
 
+                retrieverThread1.closeResources();
+                retrieverThread2.closeResources();
                 break;
             }
             case DELETE_FILE: {
@@ -225,16 +232,17 @@ public class Client {
                 fileWriter.write(buffer, 0, bytesRead);
             }
             fileWriter.flush();
-
             closeResource(fileReader);
+
             fileReader = new FileInputStream(file2);
             while ((bytesRead = fileReader.read(buffer)) != -1) {
                 fileWriter.write(buffer, 0, bytesRead);
             }
             fileWriter.flush();
+            closeResource(fileReader);
         }
         catch (IOException e) {
-            System.out.println(e.getMessage());
+            e.printStackTrace();
         }
         finally {
             closeResource(fileReader);

@@ -127,8 +127,10 @@ public class FullSavingStrategy extends Strategy {
 
         System.out.println("| STARTING TO GET " + fileName + " to " + clientHost + "|\n");
 
-        Socket westServerSocket = null; Socket eastServerSocket = null;
-        checkPathExistence(path); bootConnections(); waitForConnections();
+        Socket westServerSocket = null;
+        Socket eastServerSocket = null;
+        checkPathExistence(path);
+        waitForConnections();
 
         try {
             westServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);

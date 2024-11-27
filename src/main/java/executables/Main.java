@@ -6,8 +6,10 @@ import raid.servers.EastServer;
 import raid.servers.Server;
 import raid.servers.WestServer;
 
+import java.io.IOException;
+
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         ServerExecution se1 = new ServerExecution(new CentralServer());
         ServerExecution se2 = new ServerExecution(new EastServer());

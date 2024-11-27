@@ -97,7 +97,6 @@ public abstract class Strategy {
         Socket socket = null;
         int message = NOT_READY;
         ObjectOutputStream strategyOut = null;
-        ObjectInputStream strategyIn = null;
 
         try {
             boolean notConnected = true;
@@ -109,8 +108,8 @@ public abstract class Strategy {
                     System.out.println(e.getMessage());
                 }
             }
+
             strategyOut = new ObjectOutputStream(socket.getOutputStream());
-            strategyIn = new ObjectInputStream(socket.getInputStream());
 
             File fileToRetrieve = new File(path + "\\" + fileName);
             long fileLength = fileToRetrieve.length();
@@ -123,23 +122,19 @@ public abstract class Strategy {
             byte[] buffer = new byte[MAX_BUFFER];
             int bytesRead;
             FileInputStream fileReader = new FileInputStream(fileToRetrieve);
-            if ((bytesRead = fileReader.read(buffer, 0, MAX_BUFFER)) != -1) {
+            while ((bytesRead = fileReader.read(buffer, 0, MAX_BUFFER)) != -1) {
                 strategyOut.write(buffer, 0, bytesRead);
             }
             strategyOut.flush();
 
-            String patata = (String) strategyIn.readObject();
-            System.out.println("Patata");
-
             closeResource(fileReader);
             message = FILE_RETRIEVED;
         }
-        catch (ClassNotFoundException | IOException e) {
+        catch (IOException e) {
             message = CRITICAL_ERROR;
         } finally {
             closeResource(socket);
             closeResource(strategyOut);
-            closeResource(strategyIn);
         }
 
         return message;
