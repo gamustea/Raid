@@ -15,41 +15,43 @@ public class RetrieverThread extends Thread {
     private File resultFile = null;
 
     public RetrieverThread(int port, String path) throws IOException {
-        if (this.listenerSocket == null) {
-            listenerSocket = new ServerSocket(port);
-        }
+        listenerSocket = new ServerSocket(port);
         this.path = path;
         checkPathExistence(Paths.get(path));
     }
 
     @Override
     public void run() {
-        ObjectInputStream ois = null;
+        ObjectInputStream threadIn = null;
+        ObjectOutputStream threadOut = null;
         FileOutputStream fileWriter = null;
         Socket socket = null;
 
         try {
             // Recibe la petición de uno de los servidores
             socket = listenerSocket.accept();
-            ois = new ObjectInputStream(socket.getInputStream());
+            threadIn = new ObjectInputStream(socket.getInputStream());
+            threadOut = new ObjectOutputStream(socket.getOutputStream());
 
             // Obtiene el fichero del servidor y lo trata
-            File fileToStore = (File) ois.readObject();
-            File storedFile = new File(path + "\\" + fileToStore.getName());
+            String fileName = (String) threadIn.readObject();
+            File storedFile = new File(path + "\\" + fileName);
 
-            long fileSize = ois.readLong();
-            if (fileSize != -1) {
-                if (!storedFile.exists()) {
-                    Files.createFile(storedFile.toPath());
-                }
-
-                fileWriter = new FileOutputStream(storedFile);
-                byte[] buffer = new byte[(int) fileSize];
-
-                int bytesRead = ois.read(buffer, 0, (int) fileSize);
-                fileWriter.write(buffer);
-                fileWriter.flush();
+            long pendantReading = threadIn.readLong();
+            byte[] buffer = new byte[MAX_BUFFER];
+            if (!storedFile.exists()) {
+                Files.createFile(storedFile.toPath());
             }
+
+            fileWriter = new FileOutputStream(storedFile);
+
+            while (pendantReading != 0) {
+                int bytesRead = threadIn.read(buffer, 0, Math.min(MAX_BUFFER, (int) pendantReading));
+                fileWriter.write(buffer, 0, bytesRead);
+                pendantReading -= bytesRead;
+            }
+            fileWriter.flush();
+            threadOut.writeObject("OK");
 
             resultFile = storedFile;
             result = FILE_STORED;
@@ -60,8 +62,9 @@ public class RetrieverThread extends Thread {
         finally {
             closeResource(listenerSocket);
             closeResource(socket);
-            closeResource(ois);
+            closeResource(threadIn);
             closeResource(fileWriter);
+            closeResource(threadOut);
         }
     }
 

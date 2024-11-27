@@ -87,14 +87,15 @@ public class ClientManagerThread extends Thread {
 
                         // Escribir en un archivo local lo que venga del cliente
                         FileOutputStream fileWriter = new FileOutputStream(file);
+                        long pendantReading = serverIn.readLong();
+                        byte[] buffer = new byte[MAX_BUFFER];
 
-                        serverIn = new ObjectInputStream(clientSocket.getInputStream());
-                        byte[] buffer = new byte[1024];
-                        int bytesRead;
-                        while ((bytesRead = serverIn.read(buffer)) != -1) {
+                        while (pendantReading != 0) {
+                            int bytesRead = serverIn.read(buffer, 0, Math.min(MAX_BUFFER, (int) pendantReading));
                             fileWriter.write(buffer, 0, bytesRead);
-                            fileWriter.flush();
+                            pendantReading -= bytesRead;
                         }
+                        fileWriter.flush();
 
                         closeResource(fileWriter);
 
@@ -120,12 +121,6 @@ public class ClientManagerThread extends Thread {
         finally {
             System.out.println("| Client closed |");
             closeResource(clientSocket);
-        }
-    }
-
-    public static void clearStream(InputStream inputStream) throws IOException {
-        while (inputStream.read() != -1) {
-            // Consume los datos (puedes descartarlos o procesarlos)
         }
     }
 }

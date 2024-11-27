@@ -13,6 +13,7 @@ import java.net.Socket;
 public class FullSavingStrategy extends Strategy {
     public FullSavingStrategy(String path) {
         super(path, StrategyType.Central);
+        bootConnections();
     }
 
     @Override
@@ -20,7 +21,7 @@ public class FullSavingStrategy extends Strategy {
         System.out.println("| STARTING TO SAVE " + file.getName() + " |\n");
 
         Socket westServerSocket = null; Socket eastServerSocket = null;
-        checkPathExistence(path); bootConnections(); waitForConnections();
+        checkPathExistence(path); waitForConnections();
 
         try {
             westServerSocket = new Socket(Server.WEST_HOST, Strategy.WEST_LOCAL_CONNECTION_PORT);
@@ -65,8 +66,10 @@ public class FullSavingStrategy extends Strategy {
 
         System.out.println("| STARTING TO DELETE " + fileName + " |\n");
 
-        Socket westServerSocket = null; Socket eastServerSocket = null;
-        checkPathExistence(path); bootConnections(); waitForConnections();
+        Socket westServerSocket = null;
+        Socket eastServerSocket = null;
+        checkPathExistence(path);
+        bootConnections();
 
         int localMessage = selfDeleteFile(fileName);
 

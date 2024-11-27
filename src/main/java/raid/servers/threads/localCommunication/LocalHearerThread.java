@@ -7,6 +7,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import static raid.misc.Util.closeResource;
+
 public class LocalHearerThread extends Thread {
     private final int port;
     private final Strategy strategy;
@@ -60,7 +62,7 @@ public class LocalHearerThread extends Thread {
                     System.out.println(e.getMessage());
                 }
                 finally {
-                    Util.closeResource(s);
+                    closeResource(s);
                 }
             }
         }
@@ -68,7 +70,7 @@ public class LocalHearerThread extends Thread {
             throw new RuntimeException(e);
         }
         finally {
-            Util.closeResource(ss);
+            closeResource(ss);
         }
     }
 }

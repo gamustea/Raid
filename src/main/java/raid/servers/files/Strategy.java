@@ -43,9 +43,10 @@ public abstract class Strategy {
      * @param file {@link File} to store
      * @return "SAVED" if the file was successfully stored
      */
-    public int selfSaveFile(File file) {
+    public int selfSaveFile(File file)  {
         File storedFile = new File(path + "\\" + file.getName());
-        byte[] buffer = new byte[(int) (file.length() - 1)];
+        byte[] buffer = new byte[MAX_BUFFER];
+        int bytesRead;
 
         BufferedInputStream bis = null;
         BufferedOutputStream bos = null;
@@ -54,8 +55,8 @@ public abstract class Strategy {
             bis = new BufferedInputStream(new FileInputStream(file));
             bos = new BufferedOutputStream(new FileOutputStream(storedFile));
 
-            if (bis.read(buffer) != -1) {
-                bos.write(buffer);
+            while ((bytesRead = bis.read(buffer)) != -1) {
+                bos.write(buffer, 0, bytesRead);
             }
             bos.flush();
         }
@@ -95,44 +96,50 @@ public abstract class Strategy {
     public int selfGetFile(String fileName, String clientHost, int port) {
         Socket socket = null;
         int message = NOT_READY;
-        ObjectOutputStream oos = null;
+        ObjectOutputStream strategyOut = null;
+        ObjectInputStream strategyIn = null;
 
         try {
             boolean notConnected = true;
             while (notConnected) {
                 try {
-                    socket = new Socket("localhost", port);
+                    socket = new Socket(clientHost, port);
                     notConnected = false;
                 } catch (IOException e) {
                     System.out.println(e.getMessage());
                 }
             }
-            oos = new ObjectOutputStream(socket.getOutputStream());
+            strategyOut = new ObjectOutputStream(socket.getOutputStream());
+            strategyIn = new ObjectInputStream(socket.getInputStream());
 
             File fileToRetrieve = new File(path + "\\" + fileName);
             long fileLength = fileToRetrieve.length();
 
-            oos.writeObject(fileToRetrieve);
-            oos.flush();
-            oos.writeLong(fileLength);
-            oos.flush();
+            strategyOut.writeObject(fileToRetrieve.getName());
+            strategyOut.flush();
+            strategyOut.writeLong(fileLength);
+            strategyOut.flush();
 
-            byte[] buffer = new byte[(int) fileLength];
+            byte[] buffer = new byte[MAX_BUFFER];
+            int bytesRead;
             FileInputStream fileReader = new FileInputStream(fileToRetrieve);
-            if (fileReader.read(buffer, 0, (int) fileLength) != -1) {
-                oos.write(buffer);
-                oos.flush();
+            if ((bytesRead = fileReader.read(buffer, 0, MAX_BUFFER)) != -1) {
+                strategyOut.write(buffer, 0, bytesRead);
             }
+            strategyOut.flush();
+
+            String patata = (String) strategyIn.readObject();
+            System.out.println("Patata");
 
             closeResource(fileReader);
             message = FILE_RETRIEVED;
         }
-        catch (IOException e) {
+        catch (ClassNotFoundException | IOException e) {
             message = CRITICAL_ERROR;
-        }
-        finally {
+        } finally {
             closeResource(socket);
-            closeResource(oos);
+            closeResource(strategyOut);
+            closeResource(strategyIn);
         }
 
         return message;
@@ -141,107 +148,6 @@ public abstract class Strategy {
 
     // ====================== AUXILIARY METHODS =======================
 
-    /**
-     * Given a certain file, splits it in half and returns it as two new Files,
-     * not damaging the full file.
-     * @param file {@link} File to split
-     * @return {@link Result} storing both halves of the given file
-     */
-    public static Result<File, File> splitFile(File file) {
-        Result<String, String> result = getFileNameAndExtension(file.getName());
-        String name1 = result.getResult1() + "_1." + result.getResult2();
-        String name2 = result.getResult1() + "_2." + result.getResult2();
-
-        return splitFile(file, name1, name2);
-    }
-
-
-    /**
-     * Given a certain file, splits it in half and returns it as two new Files,
-     * not damaging the full file.
-     * @param file {@link File} to split
-     * @param firstName Name of the first half
-     * @param secondName Name of the second half
-     * @return {@link Result} storing both halves of the given file, named
-     * as specified by parameters
-     */
-    public static Result<File, File> splitFile(File file, String firstName, String secondName) {
-        final String auxPath = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Auxiliar\\";
-        long fileLength = file.length();
-
-        File file1 = new File(auxPath + firstName);
-        File file2 = new File(auxPath + secondName);
-
-        Result<File, File> result = null;
-
-        BufferedInputStream bis = null;
-        BufferedOutputStream bos1 = null;
-        BufferedOutputStream bos2 = null;
-
-        try {
-            bis = new BufferedInputStream(new FileInputStream(file));
-            bos1 = new BufferedOutputStream(new FileOutputStream(file1));
-            bos2 = new BufferedOutputStream(new FileOutputStream(file2));
-
-            byte[] buffer = new byte[1];
-
-            for (long i = 0; i < fileLength / 2; i++) {
-                bis.read(buffer);
-                bos1.write(buffer);
-            }
-            for (long i = (fileLength / 2); i <= fileLength ; i++) {
-                bis.read(buffer);
-                bos2.write(buffer);
-            }
-
-            result = new Result<>(file1, file2);
-        }
-        catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-        finally {
-            Util.closeResource(bis);
-            Util.closeResource(bos1);
-            Util.closeResource(bos2);
-        }
-
-        return result;
-    }
-
-
-    /**
-     * Returns a Result object containing the file name (without the extension)
-     * and the file extension as two separate parts.
-     *
-     * @param file the File object
-     * @return a Result<String, String> where result1 is the file name and result2 is the file extension
-     */
-    public static Result<String, String> getFileNameAndExtension(File file) {
-        return getFileNameAndExtension(file.getName());
-    }
-
-
-    /**
-     * Returns a Result object containing the file name (without the extension)
-     * and the file extension as two separate parts.
-     *
-     * @param fileName Name of a File
-     * @return a Result<String, String> where result1 is the file name and result2 is the file extension
-     */
-    public static Result<String, String> getFileNameAndExtension(String fileName) {
-        int lastIndexOfDot = fileName.lastIndexOf('.');
-
-        // If no extension is found or the dot is the last character
-        if (lastIndexOfDot == -1 || lastIndexOfDot == fileName.length() - 1) {
-            return new Result<>(fileName, ""); // No extension
-        }
-
-        String nameWithoutExtension = fileName.substring(0, lastIndexOfDot);
-        String extension = fileName.substring(lastIndexOfDot + 1);
-
-        return new Result<>(nameWithoutExtension, extension);
-    }
-
 
     /**
      * Method that sleeps until the rest of the servers are up. A
@@ -249,8 +155,12 @@ public abstract class Strategy {
      * are not up.
      */
     protected void waitForConnections() {
+        int count = 0;
         while (!connectionTestLeft.isConnectionAvailable() || !connectionTestRight.isConnectionAvailable()) {
-            System.out.println("PERIPHERAL SERVERS ARE NOT UP");
+            if (count == 0) {
+                System.out.println("PERIPHERAL SERVERS ARE NOT UP");
+                count++;
+            }
         }
     }
 
