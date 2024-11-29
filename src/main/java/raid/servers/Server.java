@@ -102,7 +102,8 @@ public abstract class Server {
         try {
             serverSocket = new ServerSocket(port);
             System.out.println("| SERVER IS UP |");
-
+            
+            //instanced for testing connectivity purposes
             hearingThread = new HearingThread(testPort);
             localCommunication = new LocalHearerThread(localCommunicationPort, strategy);
 
