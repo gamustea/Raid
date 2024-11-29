@@ -1,4 +1,4 @@
-package raid.servers.threads.localCommunication;
+package raid.threads.localCommunication;
 
 import raid.misc.Util;
 
@@ -10,17 +10,30 @@ import java.net.Socket;
 import static raid.misc.Util.*;
 
 
-public abstract class RequestSenderThread extends Thread{
+public class RequestSenderThread extends Thread{
     protected Socket socket;
     protected int request;
-    protected int result;
     protected Object objectToSend;
-    protected String clientPath;
-    protected int port;
+    protected String clientHost;
+    protected int clientPort;
 
-    protected RequestSenderThread(Socket socket, int request) {
+    protected int result;
+
+    public RequestSenderThread(Socket socket, int request, Object objectToSend) {
         this.socket = socket;
         this.request = request;
+        this.objectToSend = objectToSend;
+
+        this.result = Util.NOT_READY;
+    }
+
+    public RequestSenderThread(Socket socket, int request, Object objectToSend, String clientHost, int clientPort) {
+        this.socket = socket;
+        this.request = request;
+        this.objectToSend = objectToSend;
+        this.clientHost = clientHost;
+        this.clientPort = clientPort;
+
         this.result = Util.NOT_READY;
     }
 
@@ -38,11 +51,12 @@ public abstract class RequestSenderThread extends Thread{
             oos.flush();
 
             // Si se trata de una petición de obtención, ha de mandar información
-            // adicional: la dirección del cliente que ha realizado la petición
+            // adicional: la dirección del cliente que ha realizado la petición y
+            // su puerto
             if (request == GET_FILE) {
-                oos.writeObject(clientPath);
+                oos.writeObject(clientHost);
                 oos.flush();
-                oos.writeInt(port);
+                oos.writeInt(clientPort);
                 oos.flush();
             }
 

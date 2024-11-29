@@ -1,4 +1,4 @@
-package raid.servers.threads;
+package raid.threads;
 
 import raid.misc.Util;
 import raid.servers.Server;
@@ -70,7 +70,6 @@ public class ClientManagerThread extends Thread {
                 String fileNameReceived = (String) serverIn.readObject();
 
                 // Filtra por el tipo de comando recibido y ejecuta el método correspondiente
-                // según el Strategy insertado en el FileManager durante la construcción
                 int message = Util.NOT_READY;
                 switch(command) {
                     case GET_FILE: {

@@ -1,4 +1,4 @@
-package raid.servers.threads.testers;
+package raid.threads.testers;
 
 import static raid.misc.Util.*;
 

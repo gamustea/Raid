@@ -6,6 +6,8 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public abstract class Util {
     public final static int MAX_BUFFER = 1024;
@@ -197,5 +199,32 @@ public abstract class Util {
         String extension = fileName.substring(lastIndexOfDot + 1);
 
         return new Result<>(nameWithoutExtension, extension);
+    }
+
+
+    /**
+     * Closes an {@link ExecutorService} if it's not already
+     * shut down or is null
+     *
+     * @param executor el ExecutorService a cerrar
+     * @param timeout  el tiempo máximo para esperar el cierre
+     * @param unit     la unidad de tiempo del timeout
+     */
+    public static void shutdownExecutorService(ExecutorService executor, long timeout, TimeUnit unit) {
+        if (executor != null && !executor.isShutdown()) {
+            try {
+                // Intentar una parada ordenada
+                executor.shutdown();
+                if (!executor.awaitTermination(timeout, unit)) {
+                    // Forzar la parada si no se completa dentro del timeout
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                // Forzar la parada si ocurre una interrupción
+                executor.shutdownNow();
+                // Restaurar el estado de interrupción del hilo
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 }

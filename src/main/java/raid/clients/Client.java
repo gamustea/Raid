@@ -1,14 +1,13 @@
 package raid.clients;
 
 import raid.misc.Util;
-import raid.clients.threads.RetrieverThread;
+import raid.threads.RetrieverThread;
 import raid.servers.Server;
-import raid.servers.files.Strategy;
 import raid.misc.Result;
+import raid.threads.testers.HearingThread;
 
 import java.io.*;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.Scanner;
 
 import static java.lang.Thread.sleep;
@@ -20,7 +19,7 @@ public class Client {
     private final int port;
     private static final String path = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Client";
 
-    public Client(String host, int port) throws IOException {
+    public Client(String host, int port) {
         this.host = host;
         this.port = port;
     }
@@ -31,10 +30,15 @@ public class Client {
         try {
             System.out.println("Starting connection");
             s = new Socket(host, port);
-            System.out.println("| Connection successful |");
+            System.out.println("\n|========| USER INTERFACE (Connection successful) |========|");
+            System.out.println("Welcome to this storaging Raid System.\nYou are currently to a Server instance");
+            System.out.println("For any advice in the use of this\nsoftware, type \"MAN\" in the prompt below; ");
+            System.out.println("otherwise, you are ready to begin.");
 
             ObjectOutputStream clientOut = new ObjectOutputStream(s.getOutputStream());
             ObjectInputStream clientIn = new ObjectInputStream(s.getInputStream());
+            HearingThread hearingThread = new HearingThread(60002);
+            hearingThread.start();
 
             Result<Integer, String> result = getCommand();
 
@@ -134,19 +138,23 @@ public class Client {
     private int manageCommand(int command, String fileName, ObjectOutputStream clientOut, ObjectInputStream clientIn) throws IOException, ClassNotFoundException, InterruptedException {
         int message = NOT_READY;
 
+        // Manda al servidor el nombre del archivo con el que operar,
+        // instrucción común a todos los tipos de operaciones
+        clientOut.writeObject(fileName);
+        clientOut.flush();
+
         switch (command) {
             case GET_FILE: {
                 RetrieverThread retrieverThread1 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", Server.PORTS)), path);
                 RetrieverThread retrieverThread2 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", Server.PORTS)), path);
 
-                retrieverThread1.start();
-                retrieverThread2.start();
-
-                clientOut.writeObject(fileName);
-                clientOut.flush();
-
+                // Recibe el mensaje de operación, y si resulta que el archivo no existe,
+                // no realiza el resto de operaciones
                 message = clientIn.readInt();
                 if (message == FILE_RETRIEVED) {
+                    retrieverThread1.start();
+                    retrieverThread2.start();
+
                     retrieverThread1.join();
                     retrieverThread2.join();
 
@@ -156,31 +164,24 @@ public class Client {
                     File file2 = new File(path + "\\" + result.getResult1() + "_2." + result.getResult2());
 
                     File finalFile = new File(path + "\\" + getCorrectFileName(file1.getName()));
-
                     mergeFiles(file1, file2, finalFile);
 
-                    if (file1.exists()) {
-                        file1.delete();
-                    }
-                    if (file2.exists()) {
-                        file2.delete();
-                    }
+                    file1.delete();
+                    file2.delete();
                 }
 
+                // Cierra los recursos para volver a usarlos cuando toque
                 retrieverThread1.closeResources();
                 retrieverThread2.closeResources();
                 break;
             }
             case DELETE_FILE: {
-                clientOut.writeObject(fileName);
-                clientOut.flush();
                 message = clientIn.readInt();
                 break;
             }
             case SAVE_FILE: {
-                clientOut.writeObject(fileName);
-                clientOut.flush();
-                clientOut.writeLong(new File(fileName).length());
+                File fileToSend = new File(fileName);
+                clientOut.writeLong(fileToSend.length());
                 clientOut.flush();
 
                 byte[] buffer = new byte[MAX_BUFFER];

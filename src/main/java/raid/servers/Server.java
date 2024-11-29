@@ -1,21 +1,24 @@
 package raid.servers;
 
-import raid.servers.threads.ClientManagerThread;
+import raid.threads.ClientManagerThread;
 import raid.servers.files.Strategy;
-import raid.servers.threads.testers.HearingThread;
-import raid.servers.threads.localCommunication.LocalHearerThread;
+import raid.threads.testers.HearingThread;
+import raid.threads.localCommunication.LocalHearerThread;
 
 import static raid.misc.Util.closeResource;
 import static raid.misc.Util.getProperty;
 
 import java.io.*;
 import java.net.ServerSocket;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 
 /**
  * <p>
  * Abstraction of a Server, that's meant to run and retrieve clients'
- * commands related to {@link File} objects: storing, storaging or deleting
+ * commands related to {@link File} objects: storing, retrieving or deleting
  * them from the memory of the current Server, in a concurrent way. It uses
  * a {@link ClientManagerThread} to achieve so.
  * This server can be built in three different ways:
@@ -60,7 +63,13 @@ public abstract class Server {
      */
     protected int localCommunicationPort;
 
+    /**
+     * Properties File path of hosts
+     */
     public final static String HOSTS = "/hosts.properties";
+    /**
+     * Properties File path of ports
+     */
     public final static String PORTS = "/ports.properties";
 
     public static final int WEST_TEST_PORT = Integer.parseInt(getProperty("WEST_TEST_PORT", PORTS));
@@ -102,10 +111,12 @@ public abstract class Server {
 
             while (true) {
                 try {
+                    ScheduledThreadPoolExecutor scheduler = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(512);
+
                     // Crear lo threads que van a gestionar la llegada de clientes
                     // y las peticiones de parte de otros servidores
                     clientManager = new ClientManagerThread(serverSocket.accept(), strategy);
-                    clientManager.start();
+                    scheduler.execute(clientManager);
                 }
                 catch (IOException e) {
                     System.out.println(e.getMessage());

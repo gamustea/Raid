@@ -1,4 +1,4 @@
-package raid.servers.threads.localCommunication;
+package raid.threads.localCommunication;
 
 import raid.misc.Util;
 import raid.servers.files.Strategy;

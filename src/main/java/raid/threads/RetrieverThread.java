@@ -1,4 +1,4 @@
-package raid.clients.threads;
+package raid.threads;
 
 import static raid.misc.Util.*;
 
@@ -68,6 +68,5 @@ public class RetrieverThread extends Thread {
     public void closeResources() {
         closeResource(listenerSocket);
         listenerSocket = null;
-        this.interrupt();
     }
 }

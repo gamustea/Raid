@@ -1,9 +1,7 @@
 package raid.servers.files;
 
 import raid.servers.Server;
-import raid.servers.threads.localCommunication.FileRequestSenderThread;
-import raid.servers.threads.localCommunication.NameRequestSenderThread;
-import raid.servers.threads.localCommunication.RequestSenderThread;
+import raid.threads.localCommunication.RequestSenderThread;
 import raid.misc.Result;
 
 import static raid.misc.Util.*;
@@ -15,6 +13,7 @@ import java.net.Socket;
 import static raid.misc.Util.FILE_NOT_FOUND;
 import static raid.misc.Util.existsFileWithName;
 import static raid.servers.files.StrategyType.East;
+import static raid.servers.files.StrategyType.West;
 
 public class PartialSavingStrategy extends Strategy {
     public PartialSavingStrategy(String path, StrategyType strategyType) {
@@ -23,10 +22,16 @@ public class PartialSavingStrategy extends Strategy {
 
     @Override
     public int saveFile(File file) {
-        Socket centralServerSocket = null; Socket peripheralServerSocket = null;
-        RequestSenderThread f1 = null; RequestSenderThread f2 = null;
+        System.out.println("| STARTING TO SAVE " + file.getName() + " |\n");
 
-        checkPathExistence(path); bootConnections(); waitForConnections();
+        Socket centralServerSocket = null;
+        Socket peripheralServerSocket = null;
+
+        RequestSenderThread f1 = null;
+        RequestSenderThread f2 = null;
+
+        checkPathExistence(path);
+        waitForConnections();
 
         Result<String, String> fileParts = getFileNameAndExtension(file);
         Result<File, File> result = splitFile(
@@ -53,11 +58,12 @@ public class PartialSavingStrategy extends Strategy {
                 localHalfFile = result.getResult1();
             }
 
-            f1 = new FileRequestSenderThread(centralServerSocket, file, SAVE_FILE);
-            f2 = new FileRequestSenderThread(peripheralServerSocket, externalHalfFile, SAVE_FILE);
+            f1 = new RequestSenderThread(centralServerSocket, SAVE_FILE, file);
+            f2 = new RequestSenderThread(peripheralServerSocket, SAVE_FILE, externalHalfFile);
 
             f1.start();
             f2.start();
+
             f1.join();
             f2.join();
 
@@ -85,13 +91,16 @@ public class PartialSavingStrategy extends Strategy {
             return FILE_NOT_FOUND;
         }
 
-        Socket centralServerSocket = null; Socket peripheralServerSocket = null;
-        RequestSenderThread f1 = null; RequestSenderThread f2 = null;
+        Socket centralServerSocket = null;
+        Socket peripheralServerSocket = null;
+        RequestSenderThread f1 = null;
+        RequestSenderThread f2 = null;
 
         String localHalfFile = null;
         String externalHalfFile;
 
-        checkPathExistence(path); bootConnections(); waitForConnections();
+        checkPathExistence(path);
+        waitForConnections();
 
         int finalMessage = FILE_DELETED;
 
@@ -115,8 +124,8 @@ public class PartialSavingStrategy extends Strategy {
             // Manda a cada Thread a realizar su correspondiente tarea (en este caso
             // borrar el archivo de cada servidor correspondiente). A CentralServer
             // le envío el nombre entero y al periférico, la mitad correspondiente
-            f1 = new NameRequestSenderThread(centralServerSocket, fileName, DELETE_FILE);
-            f2 = new NameRequestSenderThread(peripheralServerSocket, externalHalfFile, DELETE_FILE);
+            f1 = new RequestSenderThread(centralServerSocket, DELETE_FILE, fileName);
+            f2 = new RequestSenderThread(peripheralServerSocket, DELETE_FILE, externalHalfFile);
 
             f1.start();
             f2.start();
@@ -147,6 +156,53 @@ public class PartialSavingStrategy extends Strategy {
             return FILE_NOT_FOUND;
         }
 
-        return 0;
+        System.out.println("| STARTING TO GET " + fileName + " to " + clientHost + "|\n");
+
+        Socket sideServerSocket = null;
+        checkPathExistence(path);
+        waitForConnections();
+
+        try {
+            if (strategyType == West) {
+                sideServerSocket = new Socket(Server.EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
+            }
+            else {
+                sideServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
+            }
+
+            int port1 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", Server.PORTS));
+            int port2 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", Server.PORTS));
+
+            Result<String, String> fileParts = getFileNameAndExtension(fileName);
+            String hereFileName;
+            String thereFileName;
+
+            if (strategyType == East) {
+                thereFileName = fileParts.getResult1() + "_1." + fileParts.getResult2();
+                hereFileName = fileParts.getResult1() + "_2." + fileParts.getResult2();
+            }
+            else {
+                hereFileName = fileParts.getResult1() + "_1." + fileParts.getResult2();
+                thereFileName = fileParts.getResult1() + "_2." + fileParts.getResult2();
+            }
+
+            selfGetFile(hereFileName, clientHost, port2);
+
+            RequestSenderThread requestSenderThread = new RequestSenderThread(sideServerSocket, GET_FILE, thereFileName,  clientHost, port1);
+
+            requestSenderThread.start();
+            requestSenderThread.join();
+        }
+        catch (IOException | InterruptedException e) {
+            return CRITICAL_ERROR;
+        }
+        finally {
+            closeResource(connectionTestLeft);
+            closeResource(connectionTestRight);
+
+            closeResource(sideServerSocket);
+        }
+
+        return SUCCESS;
     }
 }

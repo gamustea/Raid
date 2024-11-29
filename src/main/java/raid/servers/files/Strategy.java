@@ -3,12 +3,12 @@ package raid.servers.files;
 import raid.misc.Util;
 import raid.servers.Server;
 import raid.servers.WestServer;
-import raid.servers.threads.testers.ConnectionTestThread;
-import raid.misc.Result;
+import raid.threads.testers.ConnectionTestThread;
 
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Path;
+import java.util.concurrent.*;
 
 import static raid.misc.Util.*;
 
@@ -16,6 +16,7 @@ import static raid.misc.Util.*;
 public abstract class Strategy {
     protected ConnectionTestThread connectionTestLeft;
     protected ConnectionTestThread connectionTestRight;
+    protected CyclicBarrier barrier;
     protected Path path;
     protected StrategyType strategyType;
 
@@ -32,6 +33,7 @@ public abstract class Strategy {
 
     protected Strategy(String pathName, StrategyType strategyType) {
         path = Path.of(pathName);
+        barrier = new CyclicBarrier(3);
         checkPathExistence(path);
         selectLocalConnections(strategyType);
     }
@@ -93,22 +95,29 @@ public abstract class Strategy {
     }
 
 
+    /**
+     * Method that allows a {@link Server} instance to get a given
+     * {@link File} from its storaging path.
+     *
+     * @param fileName Name of the File to search
+     * @param clientHost Address of client asking for the File
+     * @param port Port number of the client
+     * @return Error code from {@link Util}
+     */
     public int selfGetFile(String fileName, String clientHost, int port) {
         Socket socket = null;
-        int message = NOT_READY;
+        int message;
         ObjectOutputStream strategyOut = null;
 
         try {
-            boolean notConnected = true;
-            while (notConnected) {
-                try {
-                    socket = new Socket(clientHost, port);
-                    notConnected = false;
-                } catch (IOException e) {
-                    System.out.println(e.getMessage());
-                }
-            }
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+            ConnectionTestThread connectionTest = new ConnectionTestThread(60002, clientHost, barrier);
 
+            scheduler.scheduleAtFixedRate(connectionTest, 0, 1, TimeUnit.SECONDS);
+            barrier.await();
+
+            socket = new Socket(clientHost, port);
             strategyOut = new ObjectOutputStream(socket.getOutputStream());
 
             File fileToRetrieve = new File(path + "\\" + fileName);
@@ -130,7 +139,7 @@ public abstract class Strategy {
             closeResource(fileReader);
             message = FILE_RETRIEVED;
         }
-        catch (IOException e) {
+        catch (IOException | InterruptedException | BrokenBarrierException e) {
             message = CRITICAL_ERROR;
         } finally {
             closeResource(socket);
@@ -150,26 +159,22 @@ public abstract class Strategy {
      * are not up.
      */
     protected void waitForConnections() {
-        int count = 0;
-        while (!connectionTestLeft.isConnectionAvailable() || !connectionTestRight.isConnectionAvailable()) {
-            if (count == 0) {
-                System.out.println("PERIPHERAL SERVERS ARE NOT UP");
-                count++;
-            }
-        }
-    }
+        // Crear un Scheduler para ejecutar una operación cada cierto tiempo
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
 
+        scheduler.scheduleAtFixedRate(connectionTestLeft, 0, 2, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(connectionTestRight, 0, 2, TimeUnit.SECONDS);
 
-    /**
-     * Starts {@link ConnectionTestThread} instances of this specific {@link Server}
-     * instance.
-     */
-    protected void bootConnections() {
-        if (!connectionTestLeft.isAlive()) {
-            connectionTestLeft.start();
+        if (!connectionTestLeft.isConnectionAvailable() || !connectionTestRight.isConnectionAvailable()) {
+            System.out.println("PERIPHERAL SERVERS ARE NOT UP");
         }
-        if (!connectionTestRight.isAlive()) {
-            connectionTestRight.start();
+        try {
+            barrier.await();
+        }
+        catch (BrokenBarrierException | InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            shutdownExecutorService(scheduler, 0, TimeUnit.SECONDS);
         }
     }
 
@@ -179,17 +184,17 @@ public abstract class Strategy {
 
         switch (strategyType) {
             case Central: {
-                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
-                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
+                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST, barrier);
+                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST, barrier);
                 break;
             }
             case East: {
-                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST);
-                this.connectionTestRight = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
+                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST, barrier);
+                this.connectionTestRight = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST, barrier);
             }
             case West: {
-                this.connectionTestLeft = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST);
-                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST);
+                this.connectionTestLeft = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST, barrier);
+                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST, barrier);
                 break;
             }
         }
