@@ -1,7 +1,7 @@
 package raid.servers;
 
 import raid.threads.ClientManagerThread;
-import raid.servers.files.Strategy;
+import raid.servers.files.ProcessingStrategy;
 import raid.threads.testers.HearingThread;
 import raid.threads.localCommunication.LocalHearerThread;
 
@@ -35,9 +35,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 public abstract class Server {
 
     /**
-     * {@link Strategy} instance of method to managing files
+     * {@link ProcessingStrategy} instance of method to managing files
      */
-    protected Strategy strategy;
+    protected ProcessingStrategy strategy;
 
     /**
      * IP of the server, represented by a {@link String}
@@ -105,7 +105,7 @@ public abstract class Server {
             hearingThread.start();
             localCommunication.start();
 
-            while (true) {
+            while (!Thread.interrupted()) {
                 try {
                     ScheduledThreadPoolExecutor scheduler = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(512);
 

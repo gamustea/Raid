@@ -2,6 +2,8 @@ package raid.servers.files;
 
 import raid.misc.Result;
 import raid.misc.Util;
+import raid.servers.CentralServer;
+import raid.servers.EastServer;
 import raid.servers.Server;
 import raid.servers.WestServer;
 import raid.threads.testers.ConnectionTestThread;
@@ -17,29 +19,68 @@ import java.util.concurrent.*;
 import static raid.misc.Util.*;
 
 
-public abstract class Strategy {
+public abstract class ProcessingStrategy {
     protected ConnectionTestThread connectionTestLeft;
     protected ConnectionTestThread connectionTestRight;
     protected CyclicBarrier barrier;
     protected Path path;
     protected StrategyType strategyType;
 
-    protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(
-            getProperty("WEST_LOCAL_CONNECTION_PORT", PORTS));
-    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(
-            getProperty("CENTRAL_LOCAL_CONNECTION_PORT", PORTS));
-    protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(
-            getProperty("EAST_LOCAL_CONNECTION_PORT", PORTS));
+    protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT", PORTS));
+    protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT", PORTS));
+    protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT", PORTS));
 
-    public abstract int saveFile(File file);
-    public abstract int deleteFile(String file);
-    public abstract int getFile(String file, String clientHost);
-
-    protected Strategy(String pathName, StrategyType strategyType) {
+    protected ProcessingStrategy(String pathName, StrategyType strategyType) {
         path = Path.of(pathName);
         barrier = new CyclicBarrier(3);
         checkPathExistence(path);
         selectLocalConnections(strategyType);
+    }
+
+
+    /**
+     * Performs the saving processing based on the current {@link ProcessingStrategy}
+     * instance. At the end of the call, the current {@link Server} and the rest of them
+     * would contain a full copy of the file (if it's a {@link CentralServer}) or half of it
+     * (if it's {@link WestServer} or a {@link EastServer}).
+     * @param file File to store
+     * @return {@link Util} code representing success or failure
+     */
+    public abstract int saveFile(File file);
+
+
+    /**
+     * Performs the deleting processing based on the current {@link ProcessingStrategy}
+     * instance. At the end of the call, the current {@link Server} and the rest of them
+     * would not contain the given file.
+     * @param file Name of the file to delete
+     * @return {@link Util} code representing success or failure
+     */
+    public abstract int deleteFile(String file);
+
+
+    /**
+     * Performs the getting processing based on the current {@link ProcessingStrategy}
+     * instance. At the end of the call, the current {@link Server} and/or the rest of them
+     * would have retrieved to the client the halves of the file he/she had requested.
+     * @param file Name of the file to retrieve
+     * @return {@link Util} code representing success or failure
+     */
+    public abstract int getFile(String file, String clientHost);
+
+
+    /**
+     * Gets a list of the files that the host {@link Server} contains.
+     * @return {@link Result} containing a success or failure code form
+     * {@link Util} and a list (might be empty) of the listed files
+     */
+    public Result<Integer, List<String>> listFiles() {
+        File directory = new File(String.valueOf(path.toFile()));
+        List<String> fileNames = new ArrayList<>();
+        for (File file : Objects.requireNonNull(directory.listFiles())) {
+            fileNames.add(getCorrectFileName(file.getName()));
+        }
+        return new Result<>(FILES_LISTED, fileNames);
     }
 
 
@@ -154,16 +195,6 @@ public abstract class Strategy {
     }
 
 
-    public Result<Integer, List<String>> listFiles() {
-        File directory = new File(String.valueOf(path.toFile()));
-        List<String> fileNames = new ArrayList<>();
-        for (File file : Objects.requireNonNull(directory.listFiles())) {
-            fileNames.add(getCorrectFileName(file.getName()));
-        }
-        return new Result<>(FILES_LISTED, fileNames);
-    }
-
-
     // ====================== AUXILIARY METHODS =======================
 
 
@@ -179,7 +210,7 @@ public abstract class Strategy {
         scheduler.scheduleAtFixedRate(connectionTestLeft, 0, 2, TimeUnit.SECONDS);
         scheduler.scheduleAtFixedRate(connectionTestRight, 0, 2, TimeUnit.SECONDS);
 
-        if (!connectionTestLeft.isConnectionAvailable() || !connectionTestRight.isConnectionAvailable()) {
+        if (connectionTestLeft.isConnectionDown() || connectionTestRight.isConnectionDown()) {
             System.out.println("PERIPHERAL SERVERS ARE NOT UP");
         }
         try {
@@ -193,6 +224,13 @@ public abstract class Strategy {
     }
 
 
+    /**
+     * Method that distributes the communications based on the {@link StrategyType}
+     * given. F.E.: if the current {@link Server} instance is a {@link WestServer},
+     * this method assigns the {@link ConnectionTestThread} instances to another
+     * {@link EastServer} and a {@link CentralServer}.
+     * @param strategyType Type of instance of the server.
+     */
     private void selectLocalConnections(StrategyType strategyType) {
         this.strategyType = strategyType;
 

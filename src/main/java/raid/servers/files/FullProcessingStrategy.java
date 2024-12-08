@@ -1,17 +1,35 @@
 package raid.servers.files;
 
 import static raid.misc.Util.*;
+
+import raid.servers.CentralServer;
+import raid.servers.EastServer;
 import raid.servers.Server;
+import raid.servers.WestServer;
 import raid.threads.localCommunication.RequestSenderThread;
 import raid.misc.Result;
 
 import java.io.*;
 import java.net.Socket;
 
-public class FullSavingStrategy extends Strategy {
-    public FullSavingStrategy(String path) {
+
+/**
+ * Intance of {@link ProcessingStrategy} that allows a {@link CentralServer} instance of a
+ * {@link Server} to perform full saving operations, so that the files given to this
+ * instanced strategy would save, retrieve and delete full content of {@link File} objets.
+ * It communicates with the peripheral servers ({@link EastServer} and {@link WestServer})
+ * to perform the complete process.
+ */
+public class FullProcessingStrategy extends ProcessingStrategy {
+
+    /**
+     * Builds a full processing strategy instance for a {@link CentralServer} instance.
+     * @param path Path in which the host server would proccess the data given.
+     */
+    public FullProcessingStrategy(String path) {
         super(path, StrategyType.Central);
     }
+
 
     @Override
     public int saveFile(File file) {
@@ -24,8 +42,8 @@ public class FullSavingStrategy extends Strategy {
         waitForConnections();
 
         try {
-            westServerSocket = new Socket(Server.WEST_HOST, Strategy.WEST_LOCAL_CONNECTION_PORT);
-            eastServerSocket = new Socket(Server.EAST_HOST, Strategy.EAST_LOCAL_CONNECTION_PORT);
+            westServerSocket = new Socket(Server.WEST_HOST, ProcessingStrategy.WEST_LOCAL_CONNECTION_PORT);
+            eastServerSocket = new Socket(Server.EAST_HOST, ProcessingStrategy.EAST_LOCAL_CONNECTION_PORT);
 
             Result<String, String> fileParts = getFileNameAndExtension(file);
             Result<File, File> result = splitFile(
@@ -62,6 +80,7 @@ public class FullSavingStrategy extends Strategy {
         return FILE_STORED;
     }
 
+
     @Override
     public int deleteFile(String fileName) {
         if (!existsFileWithName(path + "\\" + fileName)) {
@@ -81,8 +100,8 @@ public class FullSavingStrategy extends Strategy {
         // si solo si el archivo fue borrado
         if (localMessage == FILE_DELETED) {
             try {
-                westServerSocket = new Socket(Server.WEST_HOST, Strategy.WEST_LOCAL_CONNECTION_PORT);
-                eastServerSocket = new Socket(Server.EAST_HOST, Strategy.EAST_LOCAL_CONNECTION_PORT);
+                westServerSocket = new Socket(Server.WEST_HOST, ProcessingStrategy.WEST_LOCAL_CONNECTION_PORT);
+                eastServerSocket = new Socket(Server.EAST_HOST, ProcessingStrategy.EAST_LOCAL_CONNECTION_PORT);
 
                 Result<String, String> result = getFileNameAndExtension(fileName);
 
@@ -121,6 +140,7 @@ public class FullSavingStrategy extends Strategy {
 
         return FILE_DELETED;
     }
+
 
     @Override
     public int getFile(String fileName, String clientHost) {

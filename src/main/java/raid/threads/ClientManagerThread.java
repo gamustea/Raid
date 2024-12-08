@@ -3,7 +3,7 @@ package raid.threads;
 import raid.misc.Result;
 import raid.misc.Util;
 import raid.servers.Server;
-import raid.servers.files.Strategy;
+import raid.servers.files.ProcessingStrategy;
 
 import static raid.misc.Util.*;
 
@@ -17,22 +17,22 @@ import java.util.List;
  * {@link Thread} with the purpose of managing user requests, such as deleting,
  * storing or retrieving files. It works
  * by getting an already built {@link Socket} —directly communicated with
- * the respective user— and an {@link Strategy}, associated with the server
+ * the respective user— and an {@link ProcessingStrategy}, associated with the server
  * hosting the thread.
  */
 public class ClientManagerThread extends Thread {
     private final Socket clientSocket;
-    private final Strategy strategy;
+    private final ProcessingStrategy strategy;
     private final String clientHost;
 
     /**
      * Builds a specialized {@link Thread} instance, by allowing the communication
-     * with a specific client. It stores an {@link Strategy} depending on the server
+     * with a specific client. It stores an {@link ProcessingStrategy} depending on the server
      * hosting the thread.
      * @param socket {@link Socket} of the client
-     * @param strategy {@link Strategy} to follow
+     * @param strategy {@link ProcessingStrategy} to follow
      */
-    public ClientManagerThread(Socket socket, Strategy strategy) {
+    public ClientManagerThread(Socket socket, ProcessingStrategy strategy) {
         this.clientSocket = socket;
         this.strategy = strategy;
         this.clientHost = socket.getInetAddress().getCanonicalHostName();

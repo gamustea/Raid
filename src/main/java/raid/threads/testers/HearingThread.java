@@ -18,7 +18,7 @@ public class HearingThread extends Thread{
 
         try {
             ss = new ServerSocket(port);
-            while (isAlive()) {
+            while (!Thread.interrupted()) {
                 try {
                     ss.accept();
                 }

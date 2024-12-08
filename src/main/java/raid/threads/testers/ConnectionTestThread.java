@@ -33,7 +33,7 @@ public class ConnectionTestThread extends Thread{
         closeResource(s);
     }
 
-    public boolean isConnectionAvailable() {
-        return connectionAvailable;
+    public boolean isConnectionDown() {
+        return !connectionAvailable;
     }
 }

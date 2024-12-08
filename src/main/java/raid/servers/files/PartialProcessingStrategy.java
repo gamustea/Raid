@@ -1,6 +1,8 @@
 package raid.servers.files;
 
+import raid.servers.EastServer;
 import raid.servers.Server;
+import raid.servers.WestServer;
 import raid.threads.localCommunication.RequestSenderThread;
 import raid.misc.Result;
 
@@ -15,8 +17,24 @@ import static raid.misc.Util.existsFileWithName;
 import static raid.servers.files.StrategyType.East;
 import static raid.servers.files.StrategyType.West;
 
-public class PartialSavingStrategy extends Strategy {
-    public PartialSavingStrategy(String path, StrategyType strategyType) {
+
+/**
+ * Extension of {@link ProcessingStrategy} that allow {@link Server} instances that are not
+ * meant to store full data (such as {@link EastServer} and {@link WestServer}) to
+ * perform such operations. During the file processing, this class would make the
+ * server hosting this instance to communicate with the other partial saving strategy
+ * server and the {@link FullProcessingStrategy} instanced Server.
+ */
+public class PartialProcessingStrategy extends ProcessingStrategy {
+
+    /**
+     * Builds a partial saving strategy instance for a {@link Server}. It
+     * requires to determine if it's for a {@link WestServer} or a {@link EastServer},
+     * so that the communication is effective.
+     * @param path Determines the path in which the current {@link Server} is storing its data
+     * @param strategyType {@link StrategyType} among {@code East} and {@code West}
+     */
+    public PartialProcessingStrategy(String path, StrategyType strategyType) {
         super(path, strategyType);
     }
 

@@ -1,7 +1,7 @@
 package raid.threads.localCommunication;
 
 import raid.misc.Util;
-import raid.servers.files.Strategy;
+import raid.servers.files.ProcessingStrategy;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -11,9 +11,9 @@ import static raid.misc.Util.closeResource;
 
 public class LocalHearerThread extends Thread {
     private final int port;
-    private final Strategy strategy;
+    private final ProcessingStrategy strategy;
 
-    public LocalHearerThread(int port, Strategy strategy) {
+    public LocalHearerThread(int port, ProcessingStrategy strategy) {
         this.port = port;
         this.strategy = strategy;
     }

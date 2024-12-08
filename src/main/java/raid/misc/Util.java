@@ -1,6 +1,9 @@
 package raid.misc;
 
+import raid.clients.Client;
+import raid.servers.EastServer;
 import raid.servers.Server;
+import raid.servers.WestServer;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -9,7 +12,30 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Class containing different universal methods used to easy the work of the {@link Server} intances
+ * and the {@link Client} object's job. Contains different codes that represent performance, as well as
+ * paths for properties files, among other kinds of utilities. The util codes are the following:
+ * <ul>
+ *     <li>{@code GET_FILE}: ask the server to retrieve a file to you</li>
+ *     <li>{@code SAVE_FILE}: ask the server to save a file</li>
+ *     <li>{@code DELETE_FILE}: ask the server to delete a file</li>
+ *     <li>{@code LIST_FILES}: ask the server to list the files it contains</li>
+ *     <li>{@code CLOSE_CONNECTION}: ask the server to shut down the connection</li>
+ *     <li>{@code STAND_BY}: ask the server to stand by, while the client is performing operations</li>
+ *     <li>{@code NOT_READY}: make other processes know the current one is not ready</li>
+ *     <li>{@code FILE_NOT_FOUND}: make the client know the file he/she was searching does not exist</li>
+ *     <li>{@code CRITICAL_ERROR}: make other processes know a critical error happened</li>
+ *     <li>{@code FILE_DELETED}: make the client know the request of deleting was successful</li>
+ *     <li>{@code FILE_STORED}: make the client know the request of saving was successful</li>
+ *     <li>{@code FILE_RETRIEVED}: make the client know the request of getting was successful</li>
+ *     <li>{@code STANDING_BY}: make the client know the server is standing by and waiting for ongoing operations</li>
+ *     <li>{@code SUCCESS}: make any processes know that an operation has had success</li>
+ * </ul>
+ *
+ */
 public abstract class Util {
+
     public final static int MAX_BUFFER = 1024;
 
     public final static String HOSTS = "/hosts.properties";
@@ -37,11 +63,16 @@ public abstract class Util {
     public final static int SUCCESS = 20;
 
 
+    /**
+     * Interrupts a thread if the thread is still running.
+     * @param thread {@link Thread} to interrupt.
+     */
     public static void closeResource(Thread thread) {
         if (thread != null && thread.isAlive()) {
             thread.interrupt();
         }
     }
+
 
     /**
      * Checks whether the given object is potentially closable and, in
@@ -128,7 +159,14 @@ public abstract class Util {
     }
 
 
-
+    /**
+     * Takes the content of a {@link File} and deposits it into another, by adding NOT OVERWRITING.
+     * The content of the read file won't be deleted, but the content of the written
+     * file would be the sum between both file contents.
+     * @param inFile File to add content.
+     * @param outFile File to read content.
+     * @throws IOException If an I/O error happens.
+     */
     public static void depositContent(File inFile, File outFile) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(inFile));
         BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
@@ -210,6 +248,15 @@ public abstract class Util {
     }
 
 
+    /**
+     * Takes the content of two {@link File} instances and deposits it into another {@link File}.
+     * None of the original file contents would remain damaged at the end of this call - only the destination
+     * file would be the sum of the contents of both files.
+     * @param file1 First file to deposit.
+     * @param file2 Second file to deposit.
+     * @param destination Destination file, sum of {@code file1} and {@code file2}.
+     * @throws IOException If an I/O error happens.
+     */
     public static void mergeFiles(File file1, File file2, File destination) throws IOException {
         FileInputStream fileReader = null;
         FileOutputStream fileWriter = null;
@@ -276,6 +323,16 @@ public abstract class Util {
     }
 
 
+    /**
+     * Used by {@link EastServer} and {@link WestServer}
+     * to get the name of the original {@link File} name given by the user.
+     * Takes the name of a file with the character string {@code "_1"} or
+     * {@code "_2"} and transforms it so that, at the time of returning,
+     * those characters no longer exist.
+     * @param fileName Crafted file name (may contain {@code "_1"} or
+     * {@code "_2"}, or not).
+     * @return Name of the original file.
+     */
     public static String getCorrectFileName(String fileName) {
         if (!fileName.contains("_1") && !fileName.contains("_2")) {
             return fileName;
