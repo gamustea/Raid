@@ -37,9 +37,7 @@ public class RetrieverThread extends Thread {
 
             long pendantReading = threadIn.readLong();
             byte[] buffer = new byte[MAX_BUFFER];
-            if (!storedFile.exists()) {
-                Files.createFile(storedFile.toPath());
-            }
+            checkPathExistence(Paths.get(path));
 
             fileWriter = new FileOutputStream(storedFile);
 

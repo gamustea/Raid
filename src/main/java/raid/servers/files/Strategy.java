@@ -1,5 +1,6 @@
 package raid.servers.files;
 
+import raid.misc.Result;
 import raid.misc.Util;
 import raid.servers.Server;
 import raid.servers.WestServer;
@@ -8,6 +9,9 @@ import raid.threads.testers.ConnectionTestThread;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.*;
 
 import static raid.misc.Util.*;
@@ -21,11 +25,11 @@ public abstract class Strategy {
     protected StrategyType strategyType;
 
     protected final static int WEST_LOCAL_CONNECTION_PORT = Integer.parseInt(
-            getProperty("WEST_LOCAL_CONNECTION_PORT", Server.PORTS));
+            getProperty("WEST_LOCAL_CONNECTION_PORT", PORTS));
     protected final static int CENTRAL_LOCAL_CONNECTION_PORT = Integer.parseInt(
-            getProperty("CENTRAL_LOCAL_CONNECTION_PORT", Server.PORTS));
+            getProperty("CENTRAL_LOCAL_CONNECTION_PORT", PORTS));
     protected final static int EAST_LOCAL_CONNECTION_PORT = Integer.parseInt(
-            getProperty("EAST_LOCAL_CONNECTION_PORT", Server.PORTS));
+            getProperty("EAST_LOCAL_CONNECTION_PORT", PORTS));
 
     public abstract int saveFile(File file);
     public abstract int deleteFile(String file);
@@ -66,11 +70,11 @@ public abstract class Strategy {
             System.out.println(e.getMessage());
         }
         finally {
-            Util.closeResource(bis);
-            Util.closeResource(bos);
+            closeResource(bis);
+            closeResource(bos);
         }
 
-        return Util.FILE_STORED;
+        return FILE_STORED;
     }
 
 
@@ -121,6 +125,7 @@ public abstract class Strategy {
             strategyOut = new ObjectOutputStream(socket.getOutputStream());
 
             File fileToRetrieve = new File(path + "\\" + fileName);
+            checkPathExistence(fileToRetrieve.toPath());
             long fileLength = fileToRetrieve.length();
 
             strategyOut.writeObject(fileToRetrieve.getName());
@@ -143,10 +148,19 @@ public abstract class Strategy {
             message = CRITICAL_ERROR;
         } finally {
             closeResource(socket);
-            closeResource(strategyOut);
         }
 
         return message;
+    }
+
+
+    public Result<Integer, List<String>> listFiles() {
+        File directory = new File(String.valueOf(path.toFile()));
+        List<String> fileNames = new ArrayList<>();
+        for (File file : Objects.requireNonNull(directory.listFiles())) {
+            fileNames.add(getCorrectFileName(file.getName()));
+        }
+        return new Result<>(FILES_LISTED, fileNames);
     }
 
 

@@ -12,7 +12,6 @@ import static raid.misc.Util.closeResource;
 public class LocalHearerThread extends Thread {
     private final int port;
     private final Strategy strategy;
-    private Socket clientSocket;
 
     public LocalHearerThread(int port, Strategy strategy) {
         this.port = port;

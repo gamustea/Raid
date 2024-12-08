@@ -1,19 +1,14 @@
 package raid.misc;
 
-public class Result<E, T> {
-    private E result1;
-    private T result2;
-
-    public Result(E result1, T result2) {
-        this.result1 = result1;
-        this.result2 = result2;
-    }
-
-    public E getResult1() {
-        return result1;
-    }
-
-    public T getResult2() {
-        return result2;
-    }
-}
+/**
+ * Result is a returning-based object that allows a method to
+ * return two different types of data. Usually, it is used to
+ * retrieve different instances of objects - however, it can be
+ * used aswell to return data of the same class. Both parameters
+ * of the object are accessible, but not settable, as their
+ * purpose is no storing data but transporting it.
+ *
+ * @param <E> First class
+ * @param <T> Second class
+ */
+public record Result<E, T>(E result1, T result2) {}

@@ -2,6 +2,7 @@ package raid.servers;
 
 import raid.servers.files.PartialSavingStrategy;
 
+import static raid.misc.Util.*;
 import static raid.servers.files.StrategyType.East;
 
 /**
@@ -12,10 +13,11 @@ import static raid.servers.files.StrategyType.East;
  */
 public class EastServer extends Server {
     public EastServer() {
-        testPort = 55552;
-        port = 55555;
-        host = "localhost";
-        localCommunicationPort = 55558;
-        this.strategy = new PartialSavingStrategy("C:\\Users\\gmiga\\Documents\\RaidTesting\\RaidEast", East);
+        super();
+        host = getProperty("EAST_HOST", PORTS);
+        testPort = Integer.parseInt(getProperty("EAST_TEST_PORT", PORTS));
+        port = Integer.parseInt(getProperty("EAST_CLIENT_PORT", PORTS));
+        localCommunicationPort = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT", PORTS));
+        strategy = new PartialSavingStrategy(SERVER_FILE_PATH + "\\RaidEast", East);
     }
 }

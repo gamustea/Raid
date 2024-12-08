@@ -1,5 +1,6 @@
 package raid.threads;
 
+import raid.misc.Result;
 import raid.misc.Util;
 import raid.servers.Server;
 import raid.servers.files.Strategy;
@@ -9,6 +10,8 @@ import static raid.misc.Util.*;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 
 /**
  * {@link Thread} with the purpose of managing user requests, such as deleting,
@@ -58,7 +61,6 @@ public class ClientManagerThread extends Thread {
     @Override
     public void run() {
         try {
-            System.out.println(clientSocket.getInetAddress() + " has connected");
 
             // Abre streams para comunicarse con el cliente, usando su socket
             ObjectOutputStream serverOut = new ObjectOutputStream(clientSocket.getOutputStream());
@@ -70,7 +72,7 @@ public class ClientManagerThread extends Thread {
                 String fileNameReceived = (String) serverIn.readObject();
 
                 // Filtra por el tipo de comando recibido y ejecuta el método correspondiente
-                int message = Util.NOT_READY;
+                int message = NOT_READY;
                 switch(command) {
                     case GET_FILE: {
                         // Le devuelve al cliente el resultado de la operación de obtención
@@ -78,7 +80,8 @@ public class ClientManagerThread extends Thread {
                         break;
                     }
                     case SAVE_FILE: {
-                        String temporalPath = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Auxiliar";
+                        String temporalPath = SERVER_FILE_PATH + "\\Auxiliar";
+                        checkPathExistence(Path.of(temporalPath));
                         File file = new File(temporalPath + "\\" + fileNameReceived);
                         if (!file.exists()) {
                             Files.createFile(file.toPath());
@@ -105,6 +108,15 @@ public class ClientManagerThread extends Thread {
                     case DELETE_FILE: {
                         message = strategy.deleteFile(fileNameReceived);
                         break;
+                    }
+                    case STAND_BY: {
+                        message = STANDING_BY;
+                        break;
+                    }
+                    case LIST_FILES: {
+                        Result<Integer, List<String>> result = strategy.listFiles();
+                        message = result.result1();
+                        serverOut.writeObject(result.result2());
                     }
                 }
 

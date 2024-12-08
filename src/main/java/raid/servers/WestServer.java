@@ -2,6 +2,7 @@ package raid.servers;
 
 import raid.servers.files.PartialSavingStrategy;
 
+import static raid.misc.Util.*;
 import static raid.servers.files.StrategyType.West;
 
 /**
@@ -12,10 +13,11 @@ import static raid.servers.files.StrategyType.West;
  */
 public class WestServer extends Server {
     public WestServer() {
-        testPort = 55550;
-        port = 55553;
-        localCommunicationPort = 55556;
-        host = "localhost";
-        this.strategy = new PartialSavingStrategy("C:\\Users\\gmiga\\Documents\\RaidTesting\\RaidWest", West);
+        super();
+        host = getProperty("WEST_HOST", PORTS);
+        testPort = Integer.parseInt(getProperty("WEST_TEST_PORT", PORTS));
+        port = Integer.parseInt(getProperty("WEST_CLIENT_PORT", PORTS));
+        localCommunicationPort = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT", PORTS));
+        strategy = new PartialSavingStrategy(SERVER_FILE_PATH + "\\RaidWest", West);
     }
 }

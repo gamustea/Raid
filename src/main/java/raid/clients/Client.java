@@ -8,22 +8,42 @@ import raid.threads.testers.HearingThread;
 
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.Scanner;
 
-import static java.lang.Thread.sleep;
 import static raid.misc.Util.*;
 
 
+/**
+ * Instance of an Object that allows a user to connect to any
+ * instance of {@link Server}, no matter its type, and
+ * managing the files that the server stores.
+ */
 public class Client {
     private final String host;
     private final int port;
-    private static final String path = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Client";
+    private ObjectOutputStream clientOut;
+    private ObjectInputStream clientIn;
+    private static final String path = CLIENT_FILE_PATH;
 
+
+    /**
+     * Builds a client with the given parameters
+     * @param host {@link Server} host
+     * @param port {@link Server} port
+     */
     public Client(String host, int port) {
         this.host = host;
         this.port = port;
+        checkPathExistence(Path.of(path));
     }
 
+
+    /**
+     * Starts up a console menu for the user. They are given a prompt
+     * to introduce commands and a manual to read.
+     */
     public void boot() {
         Socket s = null;
 
@@ -31,19 +51,20 @@ public class Client {
             System.out.println("Starting connection");
             s = new Socket(host, port);
             System.out.println("\n|========| USER INTERFACE (Connection successful) |========|");
-            System.out.println("Welcome to this storaging Raid System.\nYou are currently to a Server instance");
-            System.out.println("For any advice in the use of this\nsoftware, type \"MAN\" in the prompt below; ");
-            System.out.println("otherwise, you are ready to begin.");
+            System.out.println("        Welcome to this storaging Raid System.\n        You are currently connected to a Server instance");
+            System.out.println("        For any advice in the use of this\n        software, type \"MAN\" in the prompt below; ");
+            System.out.println("        otherwise, you are ready to begin.\n");
 
-            ObjectOutputStream clientOut = new ObjectOutputStream(s.getOutputStream());
-            ObjectInputStream clientIn = new ObjectInputStream(s.getInputStream());
-            HearingThread hearingThread = new HearingThread(60002);
+            clientOut = new ObjectOutputStream(s.getOutputStream());
+            clientIn = new ObjectInputStream(s.getInputStream());
+
+            HearingThread hearingThread = new HearingThread(Integer.parseInt(getProperty("CLIENT_TEST_PORT", PORTS)));
             hearingThread.start();
 
             Result<Integer, String> result = getCommand();
 
-            int command = result.getResult1();
-            String fileName = result.getResult2();
+            int command = result.result1();
+            String fileName = result.result2();
 
             // Mando al servidor la operación a realizar
             clientOut.writeInt(command);
@@ -51,13 +72,13 @@ public class Client {
             while (command != Util.CLOSE_CONNECTION) {
 
                 // Gestión del resultado obtenido del comando
-                int message = manageCommand(command, fileName, clientOut, clientIn);
+                int message = manageCommand(command, fileName);
                 System.out.println(translateMessage(message));
 
                 // Petición de siguiente comando
                 result = getCommand();
-                command = result.getResult1();
-                fileName = result.getResult2();
+                command = result.result1();
+                fileName = result.result2();
 
                 // Mandar el siguiente commando
                 clientOut.writeInt(command);
@@ -73,6 +94,12 @@ public class Client {
     }
 
 
+    /**
+     * Gets the code for a command based on users keyboard input.
+     * Checks whether the typed command is correct or not.
+     * @return {@link Result} that stores the commando code from
+     * {@link Util} and the File name (if needed)
+     */
     private static Result<Integer, String> getCommand() {
         Result<Integer, String> result = null;
         Scanner scanner = new Scanner(System.in);
@@ -85,6 +112,14 @@ public class Client {
             // Si el comando es Close, sale directamente
             if (command.equalsIgnoreCase("close")) {
                 return new Result<>(Util.CLOSE_CONNECTION, null);
+            }
+
+            if (command.equalsIgnoreCase("man")) {
+                return new Result<>(STAND_BY, "TEXTO_DE_EJEMPLO");
+            }
+
+            if (command.equalsIgnoreCase("list")) {
+                return new Result<>(LIST_FILES, "TEXTO_DE_EJEMPLO");
             }
 
             // Divide el contenido de la String
@@ -135,7 +170,17 @@ public class Client {
     }
 
 
-    private int manageCommand(int command, String fileName, ObjectOutputStream clientOut, ObjectInputStream clientIn) throws IOException, ClassNotFoundException, InterruptedException {
+    /**
+     * Based on the given command, manages it. It can store, delete, list or
+     * get files, by communicating with the external host.
+     * @param command {@link Util} command code, representing the instruction to perform
+     * @param fileName Name of the file to manage
+     * @return A {@link Util} code based on the successfulness of the operation
+     * @throws IOException If an I/O Exception occurred
+     * @throws ClassNotFoundException If a retrieved object has an unknown class
+     * @throws InterruptedException If the thread was interrputed
+     */
+    private int manageCommand(int command, String fileName) throws IOException, ClassNotFoundException, InterruptedException {
         int message = NOT_READY;
 
         // Manda al servidor el nombre del archivo con el que operar,
@@ -145,13 +190,13 @@ public class Client {
 
         switch (command) {
             case GET_FILE: {
-                RetrieverThread retrieverThread1 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", Server.PORTS)), path);
-                RetrieverThread retrieverThread2 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", Server.PORTS)), path);
+                RetrieverThread retrieverThread1 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", PORTS)), path);
+                RetrieverThread retrieverThread2 = new RetrieverThread(Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", PORTS)), path);
 
                 // Recibe el mensaje de operación, y si resulta que el archivo no existe,
                 // no realiza el resto de operaciones
                 message = clientIn.readInt();
-                if (message == FILE_RETRIEVED) {
+                if (message == SUCCESS) {
                     retrieverThread1.start();
                     retrieverThread2.start();
 
@@ -160,8 +205,8 @@ public class Client {
 
                     Result<String, String> result = getFileNameAndExtension(fileName);
 
-                    File file1 = new File(path + "\\" + result.getResult1() + "_1." + result.getResult2());
-                    File file2 = new File(path + "\\" + result.getResult1() + "_2." + result.getResult2());
+                    File file1 = new File(path + "\\" + result.result1() + "_1." + result.result2());
+                    File file2 = new File(path + "\\" + result.result1() + "_2." + result.result2());
 
                     File finalFile = new File(path + "\\" + getCorrectFileName(file1.getName()));
                     mergeFiles(file1, file2, finalFile);
@@ -189,11 +234,22 @@ public class Client {
                 FileInputStream fileReader = new FileInputStream(fileName);
                 while ((bytesRead = fileReader.read(buffer)) != -1) {
                     clientOut.write(buffer, 0, bytesRead);
-                    clientOut.flush();
                 }
+                clientOut.flush();
 
                 closeResource(fileReader);
                 message = clientIn.readInt();
+                break;
+            }
+            case LIST_FILES: {
+                System.out.println("Listing files");
+                showFiles((List<String>) clientIn.readObject());
+                message = clientIn.readInt();
+                break;
+            }
+            case STAND_BY: {
+                message = clientIn.readInt();
+                printManual();
                 break;
             }
         }
@@ -202,52 +258,49 @@ public class Client {
     }
 
 
-    private static String getCorrectFileName(String fileName) {
-        String extension = getFileNameAndExtension(fileName).getResult2();
-        String trueName;
-
-        String[] parts1 = fileName.split("_1");
-        String[] parts2 = fileName.split("_2");
-
-        if (parts1.length == 2) {
-            trueName = parts1[0] + "." + extension;
+    /**
+     * Given a list of file names, prints on the screen all the names
+     * stored.
+     * @param fileNames {@link List} of {@link String} objects representing
+     * existing file names
+     */
+    private static void showFiles(List<String> fileNames) {
+        int counter = 1;
+        System.out.println("\n|========== FILES AVAILABLE ========|\n");
+        for (String fileName : fileNames) {
+            System.out.println("  " +counter + ".- " + fileName);
+            counter++;
         }
-        else {
-            trueName = parts2[0] + "." + extension;
-        }
-
-        return trueName;
+        System.out.println("\n|===================================|\n");
     }
 
 
-    private static void mergeFiles(File file1, File file2, File destination) throws IOException {
-        FileInputStream fileReader = null;
-        FileOutputStream fileWriter = null;
-        int bytesRead;
-        byte[] buffer = new byte[MAX_BUFFER];
-
-        try {
-            fileWriter = new FileOutputStream(destination);
-            fileReader = new FileInputStream(file1);
-            while ((bytesRead = fileReader.read(buffer)) != -1) {
-                fileWriter.write(buffer, 0, bytesRead);
-            }
-            fileWriter.flush();
-            closeResource(fileReader);
-
-            fileReader = new FileInputStream(file2);
-            while ((bytesRead = fileReader.read(buffer)) != -1) {
-                fileWriter.write(buffer, 0, bytesRead);
-            }
-            fileWriter.flush();
-            closeResource(fileReader);
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        }
-        finally {
-            closeResource(fileReader);
-            closeResource(fileWriter);
-        }
+    /**
+     * Prints on the screen the user manual
+     */
+    private static void printManual() {
+        System.out.println("""
+                |======================================== USER MANUAL ========================================|
+                |                                                                                             |
+                |   This software supports multiple instructions in order to manipulate your files, and they  |
+                | will be explained in the following lines:                                                   |
+                |                                                                                             |
+                |       · GET [FILE_NAME]: retrieves to the user the specified file with FILA_NAME name. Su-  |
+                |         ch file would be deposited in the specified properties file (most accurately, in    |
+                |         the path held by the variable "CLIENT_PATH") "resources/absoluteRoutes.propert-     |
+                |         ies".                                                                               |
+                |       · DELETE [FILE_NAME]: deletes an specified file from all servers named ass FILE_NAME  |
+                |       · SAVE [FILE_NAME]: saves in all servers the specified file (WARNING: it out to be an |
+                |         absolute route - otherwise, only files in the current project would be recognized)  |
+                |       · LIST: prints all the currently available files stored in servers.                   |
+                |                                                                                             |
+                |   Errors might happen if the "SERVER_PATH" in "resources/absoluteRoutes.properties" is not  |
+                | well written by the user. It is recommended to change it before the beginning of any test.  |
+                | WARNING: It's not recommended to change server ports in "resources/ports.properties", as it |
+                | may occasional trouble.                                                                     |
+                |                                                                                             |
+                |=============================================================================================|
+                
+                """);
     }
 }

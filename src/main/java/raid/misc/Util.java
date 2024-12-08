@@ -12,18 +12,28 @@ import java.util.concurrent.TimeUnit;
 public abstract class Util {
     public final static int MAX_BUFFER = 1024;
 
+    public final static String HOSTS = "/hosts.properties";
+    public final static String PORTS = "/ports.properties";
+    public final static String PATHS = "/absoluteRoutes.properties";
+
+    public final static String SERVER_FILE_PATH = getProperty("SERVER_PATH", PATHS);
+    public final static String CLIENT_FILE_PATH = getProperty("CLIENT_PATH", PATHS);
+
+    // ========= UTIL CODES FOR CLIENT-SERVER COMMUNICATION =========
     public static final int GET_FILE = 1;
     public static final int SAVE_FILE = 2;
     public static final int DELETE_FILE = 3;
-    public static final int CLOSE_CONNECTION = 4;
-
+    public static final int LIST_FILES = 4;
+    public static final int CLOSE_CONNECTION = 5;
+    public static final int STAND_BY = 6;
     public final static int NOT_READY = 10;
     public final static int FILE_NOT_FOUND = 11;
     public final static int CRITICAL_ERROR = 12;
     public final static int FILE_DELETED = 13;
     public final static int FILE_STORED = 14;
     public final static int FILE_RETRIEVED = 15;
-
+    public final static int FILES_LISTED = 16;
+    public final static int STANDING_BY = 17;
     public final static int SUCCESS = 20;
 
 
@@ -33,6 +43,11 @@ public abstract class Util {
         }
     }
 
+    /**
+     * Checks whether the given object is potentially closable and, in
+     * that case, tries to close it. Otherwise, won't do anything.
+     * @param closableResource {@link Closeable} to close
+     */
     public static void closeResource(Closeable closableResource) {
         if (closableResource != null) {
             try {
@@ -43,19 +58,33 @@ public abstract class Util {
         }
     }
 
-    public static String getProperty(String clave, String propertiesFile) {
+
+    /**
+     * Searches an attribute in the given properties file.
+     * @param key Attribute to search
+     * @param propertiesFile Name of the properties file
+     * @return Value of the attribute
+     */
+    public static String getProperty(String key, String propertiesFile) {
         String valor = null;
         try {
             Properties props = new Properties();
             InputStream prIS = Server.class.getResourceAsStream(propertiesFile);
             props.load(prIS);
-            valor = props.getProperty(clave);
+            valor = props.getProperty(key);
         } catch (IOException ex) {
             System.out.println(ex.getMessage());
         }
         return valor;
     }
 
+
+    /**
+     * Given a Util message, translates it into a {@link String}, so
+     * that it can be interpreted by the user.
+     * @param message A valid Util code
+     * @return {@link String} translation for the given code
+     */
     public static String translateMessage(int message) {
         return switch (message) {
             case NOT_READY -> "| PROCESS IS NOT READY |";
@@ -64,15 +93,24 @@ public abstract class Util {
             case FILE_DELETED -> "| FILE SUCCESSFULLY DELETED |";
             case FILE_STORED -> "| FILE SUCCESSFULLY STORED |";
             case FILE_RETRIEVED -> "| FILE SUCCESSFULLY RETRIEVED |";
+            case FILES_LISTED -> "| LIST OF FILES SUCCESSFULLY RETRIEVED |";
             case SUCCESS -> "| PROCESS HAS HAD SUCCESS |";
+            case STANDING_BY -> "| ORDER RECEIVED - SERVER STANDING BY |";
             default -> "";
         };
     }
 
+
+    /**
+     * Checks whether there is a file stored with the given name.
+     * @param fileName Name of the file
+     * @return True if the file exits and false otherwise
+     */
     public static boolean existsFileWithName(String fileName) {
         File file = new File(fileName);
         return file.exists();
     }
+
 
     /**
      * Checks that the given path exists in the current host. If it does not,
@@ -89,6 +127,8 @@ public abstract class Util {
         }
     }
 
+
+
     public static void depositContent(File inFile, File outFile) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(inFile));
         BufferedWriter bw = new BufferedWriter(new FileWriter(outFile));
@@ -100,18 +140,19 @@ public abstract class Util {
         bw.flush();
     }
 
+
     /**
      * Given a certain file, splits it in half and returns it as two new Files,
      * not damaging the full file.
      * @param file {@link} File to split
      * @return {@link Result} storing both halves of the given file
      */
-    public static Result<File, File> splitFile(File file) {
+    public static Result<File, File> splitFile(File file, String currentPath) {
         Result<String, String> result = getFileNameAndExtension(file.getName());
-        String name1 = result.getResult1() + "_1." + result.getResult2();
-        String name2 = result.getResult1() + "_2." + result.getResult2();
+        String name1 = result.result1() + "_1." + result.result2();
+        String name2 = result.result1() + "_2." + result.result2();
 
-        return splitFile(file, name1, name2);
+        return splitFile(file, currentPath, name1, name2);
     }
 
 
@@ -124,12 +165,13 @@ public abstract class Util {
      * @return {@link Result} storing both halves of the given file, named
      * as specified by parameters
      */
-    public static Result<File, File> splitFile(File file, String firstName, String secondName) {
-        final String auxPath = "C:\\Users\\gmiga\\Documents\\RaidTesting\\Auxiliar\\";
+    public static Result<File, File> splitFile(File file, String currentPath, String firstName, String secondName) {
+        currentPath += "\\";
+        checkPathExistence(Path.of(currentPath));
         long fileLength = file.length();
 
-        File file1 = new File(auxPath + firstName);
-        File file2 = new File(auxPath + secondName);
+        File file1 = new File(currentPath + firstName);
+        File file2 = new File(currentPath + secondName);
 
         Result<File, File> result = null;
 
@@ -168,6 +210,38 @@ public abstract class Util {
     }
 
 
+    public static void mergeFiles(File file1, File file2, File destination) throws IOException {
+        FileInputStream fileReader = null;
+        FileOutputStream fileWriter = null;
+        int bytesRead;
+        byte[] buffer = new byte[MAX_BUFFER];
+
+        try {
+            fileWriter = new FileOutputStream(destination);
+            fileReader = new FileInputStream(file1);
+            while ((bytesRead = fileReader.read(buffer)) != -1) {
+                fileWriter.write(buffer, 0, bytesRead);
+            }
+            fileWriter.flush();
+            closeResource(fileReader);
+
+            fileReader = new FileInputStream(file2);
+            while ((bytesRead = fileReader.read(buffer)) != -1) {
+                fileWriter.write(buffer, 0, bytesRead);
+            }
+            fileWriter.flush();
+            closeResource(fileReader);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        finally {
+            closeResource(fileReader);
+            closeResource(fileWriter);
+        }
+    }
+
+
     /**
      * Returns a Result object containing the file name (without the extension)
      * and the file extension as two separate parts.
@@ -199,6 +273,29 @@ public abstract class Util {
         String extension = fileName.substring(lastIndexOfDot + 1);
 
         return new Result<>(nameWithoutExtension, extension);
+    }
+
+
+    public static String getCorrectFileName(String fileName) {
+        if (!fileName.contains("_1") && !fileName.contains("_2")) {
+            return fileName;
+        }
+        else {
+            String extension = getFileNameAndExtension(fileName).result2();
+            String trueName;
+
+            String[] parts1 = fileName.split("_1");
+            String[] parts2 = fileName.split("_2");
+
+            if (parts1.length == 2) {
+                trueName = parts1[0] + "." + extension;
+            }
+            else {
+                trueName = parts2[0] + "." + extension;
+            }
+
+            return trueName;
+        }
     }
 
 

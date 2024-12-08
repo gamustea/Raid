@@ -19,6 +19,6 @@ public class Main {
         se2.start();
         se3.start();
 
-        new Client("localhost",Server.EAST_CLIENT_PORT).boot();
+        new Client("localhost",Server.CENTRAL_CLIENT_PORT).boot();
     }
 }

@@ -19,6 +19,7 @@ public class FullSavingStrategy extends Strategy {
 
         Socket westServerSocket = null;
         Socket eastServerSocket = null;
+
         checkPathExistence(path);
         waitForConnections();
 
@@ -29,18 +30,22 @@ public class FullSavingStrategy extends Strategy {
             Result<String, String> fileParts = getFileNameAndExtension(file);
             Result<File, File> result = splitFile(
                     file,
-                    fileParts.getResult1() + "_1." + fileParts.getResult2(),
-                    fileParts.getResult1() + "_2." + fileParts.getResult2()
+                    String.valueOf(path),
+                    fileParts.result1() + "_1." + fileParts.result2(),
+                    fileParts.result1() + "_2." + fileParts.result2()
             );
 
-            RequestSenderThread f1 = new RequestSenderThread(westServerSocket, SAVE_FILE, result.getResult1());
-            RequestSenderThread f2 = new RequestSenderThread(eastServerSocket, SAVE_FILE, result.getResult2());
+            RequestSenderThread f1 = new RequestSenderThread(westServerSocket, SAVE_FILE, result.result1());
+            RequestSenderThread f2 = new RequestSenderThread(eastServerSocket, SAVE_FILE, result.result2());
 
             f1.start();
             f2.start();
 
             f1.join();
             f2.join();
+
+            result.result1().delete();
+            result.result2().delete();
         }
         catch (IOException | InterruptedException e) {
             return CRITICAL_ERROR;
@@ -82,8 +87,8 @@ public class FullSavingStrategy extends Strategy {
                 Result<String, String> result = getFileNameAndExtension(fileName);
 
                 // Parto el nombre para que ambos tengan nombres diferentes
-                String fileName1 = result.getResult1() + "_1." + result.getResult2();
-                String fileName2 = result.getResult1() + "_2." + result.getResult2();
+                String fileName1 = result.result1() + "_1." + result.result2();
+                String fileName2 = result.result1() + "_2." + result.result2();
 
                 RequestSenderThread f1 = new RequestSenderThread(westServerSocket, DELETE_FILE, fileName1);
                 RequestSenderThread f2 = new RequestSenderThread(eastServerSocket, DELETE_FILE, fileName2);
@@ -134,12 +139,12 @@ public class FullSavingStrategy extends Strategy {
             westServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
             eastServerSocket = new Socket(Server.EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
 
-            int port1 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", Server.PORTS));
-            int port2 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", Server.PORTS));
+            int port1 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", PORTS));
+            int port2 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", PORTS));
 
             Result<String, String> fileParts = getFileNameAndExtension(fileName);
-            String fileName1 = fileParts.getResult1() + "_1." + fileParts.getResult2();
-            String fileName2 = fileParts.getResult1() + "_2." + fileParts.getResult2();
+            String fileName1 = fileParts.result1() + "_1." + fileParts.result2();
+            String fileName2 = fileParts.result1() + "_2." + fileParts.result2();
 
             RequestSenderThread f1 = new RequestSenderThread(westServerSocket, GET_FILE, fileName1,  clientHost, port1);
             RequestSenderThread f2 = new RequestSenderThread(eastServerSocket, GET_FILE, fileName2,  clientHost, port2);

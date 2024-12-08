@@ -36,8 +36,9 @@ public class PartialSavingStrategy extends Strategy {
         Result<String, String> fileParts = getFileNameAndExtension(file);
         Result<File, File> result = splitFile(
                 file,
-                fileParts.getResult1() + "_1." + fileParts.getResult2(),
-                fileParts.getResult1() + "_2." + fileParts.getResult2()
+                String.valueOf(path),
+                fileParts.result1() + "_1." + fileParts.result2(),
+                fileParts.result1() + "_2." + fileParts.result2()
         );
         try {
             centralServerSocket = new Socket(Server.CENTRAL_HOST, CENTRAL_LOCAL_CONNECTION_PORT);
@@ -49,13 +50,13 @@ public class PartialSavingStrategy extends Strategy {
             // de estrategia elegida en la construcción
             if (strategyType.equals(East)) {
                 peripheralServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
-                externalHalfFile = result.getResult1();
-                localHalfFile = result.getResult2();
+                externalHalfFile = result.result1();
+                localHalfFile = result.result2();
             }
             else {
                 peripheralServerSocket = new Socket(Server.EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
-                externalHalfFile = result.getResult2();
-                localHalfFile = result.getResult1();
+                externalHalfFile = result.result2();
+                localHalfFile = result.result1();
             }
 
             f1 = new RequestSenderThread(centralServerSocket, SAVE_FILE, file);
@@ -112,13 +113,13 @@ public class PartialSavingStrategy extends Strategy {
             Result<String, String> fileParts = getFileNameAndExtension(fileName);
             if (strategyType.equals(East)) {
                 peripheralServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
-                externalHalfFile = fileParts.getResult1() + "_1." + fileParts.getResult2();
-                localHalfFile = fileParts.getResult1() + "_2." + fileParts.getResult2();
+                externalHalfFile = fileParts.result1() + "_1." + fileParts.result2();
+                localHalfFile = fileParts.result1() + "_2." + fileParts.result2();
             }
             else {
                 peripheralServerSocket = new Socket(Server.EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
-                externalHalfFile = fileParts.getResult1() + "_2." + fileParts.getResult2();
-                localHalfFile = fileParts.getResult1() + "_1." + fileParts.getResult2();
+                externalHalfFile = fileParts.result1() + "_2." + fileParts.result2();
+                localHalfFile = fileParts.result1() + "_1." + fileParts.result2();
             }
 
             // Manda a cada Thread a realizar su correspondiente tarea (en este caso
@@ -170,20 +171,20 @@ public class PartialSavingStrategy extends Strategy {
                 sideServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
             }
 
-            int port1 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", Server.PORTS));
-            int port2 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", Server.PORTS));
+            int port1 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", PORTS));
+            int port2 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", PORTS));
 
             Result<String, String> fileParts = getFileNameAndExtension(fileName);
             String hereFileName;
             String thereFileName;
 
             if (strategyType == East) {
-                thereFileName = fileParts.getResult1() + "_1." + fileParts.getResult2();
-                hereFileName = fileParts.getResult1() + "_2." + fileParts.getResult2();
+                thereFileName = fileParts.result1() + "_1." + fileParts.result2();
+                hereFileName = fileParts.result1() + "_2." + fileParts.result2();
             }
             else {
-                hereFileName = fileParts.getResult1() + "_1." + fileParts.getResult2();
-                thereFileName = fileParts.getResult1() + "_2." + fileParts.getResult2();
+                hereFileName = fileParts.result1() + "_1." + fileParts.result2();
+                thereFileName = fileParts.result1() + "_2." + fileParts.result2();
             }
 
             selfGetFile(hereFileName, clientHost, port2);

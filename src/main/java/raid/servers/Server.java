@@ -5,13 +5,12 @@ import raid.servers.files.Strategy;
 import raid.threads.testers.HearingThread;
 import raid.threads.localCommunication.LocalHearerThread;
 
-import static raid.misc.Util.closeResource;
-import static raid.misc.Util.getProperty;
+import static raid.misc.Util.*;
 
 import java.io.*;
 import java.net.ServerSocket;
+import java.nio.file.Path;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 
@@ -63,15 +62,6 @@ public abstract class Server {
      */
     protected int localCommunicationPort;
 
-    /**
-     * Properties File path of hosts
-     */
-    public final static String HOSTS = "/hosts.properties";
-    /**
-     * Properties File path of ports
-     */
-    public final static String PORTS = "/ports.properties";
-
     public static final int WEST_TEST_PORT = Integer.parseInt(getProperty("WEST_TEST_PORT", PORTS));
     public static final int CENTRAL_TEST_PORT = Integer.parseInt(getProperty("CENTRAL_TEST_PORT", PORTS));
     public static final int EAST_TEST_PORT = Integer.parseInt(getProperty("EAST_TEST_PORT", PORTS));
@@ -83,6 +73,11 @@ public abstract class Server {
     public static final String WEST_HOST = getProperty("WEST_HOST", HOSTS);
     public static final String CENTRAL_HOST = getProperty("CENTRAL_HOST", HOSTS);
     public static final String EAST_HOST = getProperty("EAST_HOST", HOSTS);
+
+
+    protected Server() {
+        checkPathExistence(Path.of(SERVER_FILE_PATH));
+    }
 
 
     /**
