@@ -6,6 +6,8 @@ import raid.servers.EastServer;
 import raid.servers.Server;
 import raid.servers.WestServer;
 
+import static raid.misc.Util.*;
+
 import java.io.IOException;
 
 public class Main {
@@ -19,6 +21,6 @@ public class Main {
         se2.start();
         se3.start();
 
-        new Client("localhost",Server.CENTRAL_CLIENT_PORT).boot();
+        new Client("localhost", CENTRAL_CLIENT_PORT).boot();
     }
 }

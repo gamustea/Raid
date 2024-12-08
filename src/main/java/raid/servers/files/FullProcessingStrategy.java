@@ -43,8 +43,8 @@ public class FullProcessingStrategy extends ProcessingStrategy {
         waitForConnections();
 
         try {
-            westServerSocket = new Socket(Server.WEST_HOST, ProcessingStrategy.WEST_LOCAL_CONNECTION_PORT);
-            eastServerSocket = new Socket(Server.EAST_HOST, ProcessingStrategy.EAST_LOCAL_CONNECTION_PORT);
+            westServerSocket = new Socket(WEST_HOST, ProcessingStrategy.WEST_LOCAL_CONNECTION_PORT);
+            eastServerSocket = new Socket(EAST_HOST, ProcessingStrategy.EAST_LOCAL_CONNECTION_PORT);
 
             Result<String, String> fileParts = getFileNameAndExtension(file);
             Result<File, File> result = splitFile(
@@ -99,8 +99,8 @@ public class FullProcessingStrategy extends ProcessingStrategy {
         // si solo si el archivo fue borrado
         if (localMessage == FILE_DELETED) {
             try {
-                westServerSocket = new Socket(Server.WEST_HOST, ProcessingStrategy.WEST_LOCAL_CONNECTION_PORT);
-                eastServerSocket = new Socket(Server.EAST_HOST, ProcessingStrategy.EAST_LOCAL_CONNECTION_PORT);
+                westServerSocket = new Socket(WEST_HOST, ProcessingStrategy.WEST_LOCAL_CONNECTION_PORT);
+                eastServerSocket = new Socket(EAST_HOST, ProcessingStrategy.EAST_LOCAL_CONNECTION_PORT);
 
                 Result<String, String> result = getFileNameAndExtension(fileName);
 
@@ -155,8 +155,8 @@ public class FullProcessingStrategy extends ProcessingStrategy {
         waitForConnections();
 
         try {
-            westServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
-            eastServerSocket = new Socket(Server.EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
+            westServerSocket = new Socket(WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
+            eastServerSocket = new Socket(EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
 
             int port1 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", PORTS));
             int port2 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT2", PORTS));

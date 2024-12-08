@@ -236,17 +236,17 @@ public abstract class ProcessingStrategy {
 
         switch (strategyType) {
             case Central: {
-                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST, barrier);
-                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST, barrier);
+                this.connectionTestLeft = new ConnectionTestThread(WEST_TEST_PORT, WEST_HOST, barrier);
+                this.connectionTestRight = new ConnectionTestThread(EAST_TEST_PORT, EAST_HOST, barrier);
                 break;
             }
             case East: {
-                this.connectionTestLeft = new ConnectionTestThread(Server.WEST_TEST_PORT, Server.WEST_HOST, barrier);
-                this.connectionTestRight = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST, barrier);
+                this.connectionTestLeft = new ConnectionTestThread(WEST_TEST_PORT, WEST_HOST, barrier);
+                this.connectionTestRight = new ConnectionTestThread(CENTRAL_TEST_PORT, CENTRAL_HOST, barrier);
             }
             case West: {
-                this.connectionTestLeft = new ConnectionTestThread(WestServer.CENTRAL_TEST_PORT, Server.CENTRAL_HOST, barrier);
-                this.connectionTestRight = new ConnectionTestThread(Server.EAST_TEST_PORT, Server.EAST_HOST, barrier);
+                this.connectionTestLeft = new ConnectionTestThread(CENTRAL_TEST_PORT, CENTRAL_HOST, barrier);
+                this.connectionTestRight = new ConnectionTestThread(EAST_TEST_PORT, EAST_HOST, barrier);
                 break;
             }
         }

@@ -59,7 +59,7 @@ public class PartialProcessingStrategy extends ProcessingStrategy {
                 fileParts.result1() + "_2." + fileParts.result2()
         );
         try {
-            centralServerSocket = new Socket(Server.CENTRAL_HOST, CENTRAL_LOCAL_CONNECTION_PORT);
+            centralServerSocket = new Socket(CENTRAL_HOST, CENTRAL_LOCAL_CONNECTION_PORT);
 
             File localHalfFile;
             File externalHalfFile;
@@ -67,12 +67,12 @@ public class PartialProcessingStrategy extends ProcessingStrategy {
             // Construye un Socket de formas distintas en función del tipo
             // de estrategia elegida en la construcción
             if (strategyType.equals(East)) {
-                peripheralServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
+                peripheralServerSocket = new Socket(WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
                 externalHalfFile = result.result1();
                 localHalfFile = result.result2();
             }
             else {
-                peripheralServerSocket = new Socket(Server.EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
+                peripheralServerSocket = new Socket(EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
                 externalHalfFile = result.result2();
                 localHalfFile = result.result1();
             }
@@ -126,18 +126,18 @@ public class PartialProcessingStrategy extends ProcessingStrategy {
         int finalMessage = FILE_DELETED;
 
         try {
-            centralServerSocket = new Socket(Server.CENTRAL_HOST, CENTRAL_LOCAL_CONNECTION_PORT);
+            centralServerSocket = new Socket(CENTRAL_HOST, CENTRAL_LOCAL_CONNECTION_PORT);
 
             // Construye un Socket de formas distintas en función del tipo
             // de estrategia elegida en la construcción
             Result<String, String> fileParts = getFileNameAndExtension(fileName);
             if (strategyType.equals(East)) {
-                peripheralServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
+                peripheralServerSocket = new Socket(WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
                 externalHalfFile = fileParts.result1() + "_1." + fileParts.result2();
                 localHalfFile = fileParts.result1() + "_2." + fileParts.result2();
             }
             else {
-                peripheralServerSocket = new Socket(Server.EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
+                peripheralServerSocket = new Socket(EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
                 externalHalfFile = fileParts.result1() + "_2." + fileParts.result2();
                 localHalfFile = fileParts.result1() + "_1." + fileParts.result2();
             }
@@ -185,10 +185,10 @@ public class PartialProcessingStrategy extends ProcessingStrategy {
 
         try {
             if (strategyType == West) {
-                sideServerSocket = new Socket(Server.EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
+                sideServerSocket = new Socket(EAST_HOST, EAST_LOCAL_CONNECTION_PORT);
             }
             else {
-                sideServerSocket = new Socket(Server.WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
+                sideServerSocket = new Socket(WEST_HOST, WEST_LOCAL_CONNECTION_PORT);
             }
 
             int port1 = Integer.parseInt(getProperty("CLIENT_HEAR_PORT1", PORTS));

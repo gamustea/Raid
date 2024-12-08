@@ -62,18 +62,6 @@ public abstract class Server {
      */
     protected int localCommunicationPort;
 
-    public static final int WEST_TEST_PORT = Integer.parseInt(getProperty("WEST_TEST_PORT", PORTS));
-    public static final int CENTRAL_TEST_PORT = Integer.parseInt(getProperty("CENTRAL_TEST_PORT", PORTS));
-    public static final int EAST_TEST_PORT = Integer.parseInt(getProperty("EAST_TEST_PORT", PORTS));
-
-    public static final int WEST_CLIENT_PORT = Integer.parseInt(getProperty("WEST_CLIENT_PORT", PORTS));
-    public static final int CENTRAL_CLIENT_PORT = Integer.parseInt(getProperty("CENTRAL_CLIENT_PORT", PORTS));
-    public static final int EAST_CLIENT_PORT = Integer.parseInt(getProperty("EAST_CLIENT_PORT", PORTS));
-
-    public static final String WEST_HOST = getProperty("WEST_HOST", HOSTS);
-    public static final String CENTRAL_HOST = getProperty("CENTRAL_HOST", HOSTS);
-    public static final String EAST_HOST = getProperty("EAST_HOST", HOSTS);
-
 
     protected Server() {
         checkPathExistence(Path.of(SERVER_FILE_PATH));
