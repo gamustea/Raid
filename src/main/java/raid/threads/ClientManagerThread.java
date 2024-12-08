@@ -82,7 +82,6 @@ public class ClientManagerThread extends Thread {
                         break;
                     }
                     case SAVE_FILE: {
-
                         checkPathExistence(Path.of(temporalPath));
                         File file = new File(temporalPath + "\\" + fileNameReceived);
                         if (!file.exists()) {

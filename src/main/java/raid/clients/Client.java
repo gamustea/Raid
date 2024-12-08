@@ -146,12 +146,12 @@ public class Client {
                     case "Save":
                     case "SAVE":
                     case "save":
-                        if (file.exists()) {
-                            result = new Result<>(Util.SAVE_FILE, fileName);
-                            commandNotValid = false;
+                        if (!file.exists() || file.isDirectory()) {
+                            System.out.println(translateMessage(FILE_NOT_FOUND));
                         }
                         else {
-                            System.out.println(translateMessage(FILE_NOT_FOUND));
+                            result = new Result<>(Util.SAVE_FILE, fileName);
+                            commandNotValid = false;
                         }
                         break;
                     case "Delete":
@@ -185,7 +185,7 @@ public class Client {
 
         // Manda al servidor el nombre del archivo con el que operar,
         // instrucción común a todos los tipos de operaciones
-        clientOut.writeObject(fileName);
+        clientOut.writeObject(new File(fileName).getName());
         clientOut.flush();
 
         switch (command) {

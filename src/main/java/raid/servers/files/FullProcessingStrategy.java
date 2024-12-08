@@ -34,6 +34,7 @@ public class FullProcessingStrategy extends ProcessingStrategy {
     @Override
     public int saveFile(File file) {
         System.out.println("| STARTING TO SAVE " + file.getName() + " |\n");
+        selfSaveFile(file);
 
         Socket westServerSocket = null;
         Socket eastServerSocket = null;
@@ -48,7 +49,7 @@ public class FullProcessingStrategy extends ProcessingStrategy {
             Result<String, String> fileParts = getFileNameAndExtension(file);
             Result<File, File> result = splitFile(
                     file,
-                    String.valueOf(path),
+                    path + "\\Auxiliary",
                     fileParts.result1() + "_1." + fileParts.result2(),
                     fileParts.result1() + "_2." + fileParts.result2()
             );
@@ -61,9 +62,6 @@ public class FullProcessingStrategy extends ProcessingStrategy {
 
             f1.join();
             f2.join();
-
-            result.result1().delete();
-            result.result2().delete();
         }
         catch (IOException | InterruptedException e) {
             return CRITICAL_ERROR;
@@ -74,8 +72,9 @@ public class FullProcessingStrategy extends ProcessingStrategy {
 
             closeResource(westServerSocket);
             closeResource(eastServerSocket);
+
+            deleteDirectory(new File(path + "\\Auxiliary"));
         }
-        selfSaveFile(file);
 
         return FILE_STORED;
     }

@@ -54,7 +54,7 @@ public class PartialProcessingStrategy extends ProcessingStrategy {
         Result<String, String> fileParts = getFileNameAndExtension(file);
         Result<File, File> result = splitFile(
                 file,
-                String.valueOf(path),
+                path + "\\Auxiliary",
                 fileParts.result1() + "_1." + fileParts.result2(),
                 fileParts.result1() + "_2." + fileParts.result2()
         );
@@ -86,7 +86,6 @@ public class PartialProcessingStrategy extends ProcessingStrategy {
             f1.join();
             f2.join();
 
-            assert localHalfFile != null;
             selfSaveFile(localHalfFile);
 
             return FILE_STORED;
@@ -99,6 +98,7 @@ public class PartialProcessingStrategy extends ProcessingStrategy {
             closeResource(peripheralServerSocket);
             closeResource(f1);
             closeResource(f2);
+            deleteDirectory(new File(path + "\\Auxiliary"));
         }
 
         return CRITICAL_ERROR;
@@ -109,6 +109,8 @@ public class PartialProcessingStrategy extends ProcessingStrategy {
         if (!existsFileWithName(fileName)) {
             return FILE_NOT_FOUND;
         }
+
+        System.out.println("| STARTING TO SAVE " + fileName + " |\n");
 
         Socket centralServerSocket = null;
         Socket peripheralServerSocket = null;
