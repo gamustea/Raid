@@ -14,10 +14,12 @@ import static raid.servers.files.StrategyType.West;
 public class WestServer extends Server {
     public WestServer() {
         super();
-        host = getProperty("WEST_HOST", PORTS);
-        testPort = Integer.parseInt(getProperty("WEST_TEST_PORT", PORTS));
-        port = Integer.parseInt(getProperty("WEST_CLIENT_PORT", PORTS));
-        localCommunicationPort = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT", PORTS));
-        strategy = new PartialProcessingStrategy(SERVER_FILE_PATH + "\\RaidWest", West);
+        if (!noBoot) {
+            host = getProperty("WEST_HOST", PORTS);
+            testPort = Integer.parseInt(getProperty("WEST_TEST_PORT", PORTS));
+            port = Integer.parseInt(getProperty("WEST_CLIENT_PORT", PORTS));
+            localCommunicationPort = Integer.parseInt(getProperty("WEST_LOCAL_CONNECTION_PORT", PORTS));
+            strategy = new PartialProcessingStrategy(SERVER_FILE_PATH + "\\RaidWest", West);
+        }
     }
 }

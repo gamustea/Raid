@@ -14,10 +14,12 @@ import static raid.servers.files.StrategyType.East;
 public class EastServer extends Server {
     public EastServer() {
         super();
-        host = getProperty("EAST_HOST", PORTS);
-        testPort = Integer.parseInt(getProperty("EAST_TEST_PORT", PORTS));
-        port = Integer.parseInt(getProperty("EAST_CLIENT_PORT", PORTS));
-        localCommunicationPort = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT", PORTS));
-        strategy = new PartialProcessingStrategy(SERVER_FILE_PATH + "\\RaidEast", East);
+        if (!noBoot) {
+            host = getProperty("EAST_HOST", PORTS);
+            testPort = Integer.parseInt(getProperty("EAST_TEST_PORT", PORTS));
+            port = Integer.parseInt(getProperty("EAST_CLIENT_PORT", PORTS));
+            localCommunicationPort = Integer.parseInt(getProperty("EAST_LOCAL_CONNECTION_PORT", PORTS));
+            strategy = new PartialProcessingStrategy(SERVER_FILE_PATH + "\\RaidEast", East);
+        }
     }
 }

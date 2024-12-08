@@ -62,9 +62,17 @@ public abstract class Server {
      */
     protected int localCommunicationPort;
 
+    /**
+     * Variable that determines if a Server is bootable or not
+     */
+    protected boolean noBoot = false;
+
 
     protected Server() {
-        checkPathExistence(Path.of(SERVER_FILE_PATH));
+        if (!(new File(SERVER_FILE_PATH).exists())) {
+            System.out.println("THIS SERVER WON'T BOOT - CHECK PATH EXISTENCE AND BUILD A NEW SERVER OR EXECUTE AGAIN");
+            noBoot = true;
+        }
     }
 
 
@@ -76,6 +84,11 @@ public abstract class Server {
      * APART FROM KILLING THE PROCESS]
      */
     public void boot() {
+        if (noBoot) {
+            System.out.println("THIS SERVER WON'T BOOT");
+            return;
+        }
+
         ServerSocket serverSocket = null;
 
         LocalHearerThread localCommunication = null;

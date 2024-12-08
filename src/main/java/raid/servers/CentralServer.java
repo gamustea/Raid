@@ -12,10 +12,12 @@ import static raid.misc.Util.*;
 public class CentralServer extends Server {
     public CentralServer() {
         super();
-        host = getProperty("CENTRAL_HOST", PORTS);
-        testPort = Integer.parseInt(getProperty("CENTRAL_TEST_PORT", PORTS));
-        port = Integer.parseInt(getProperty("CENTRAL_CLIENT_PORT", PORTS));
-        localCommunicationPort = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT", PORTS));
-        strategy = new FullProcessingStrategy(SERVER_FILE_PATH + "\\RaidCentral");
+        if (!noBoot) {
+            host = getProperty("CENTRAL_HOST", PORTS);
+            testPort = Integer.parseInt(getProperty("CENTRAL_TEST_PORT", PORTS));
+            port = Integer.parseInt(getProperty("CENTRAL_CLIENT_PORT", PORTS));
+            localCommunicationPort = Integer.parseInt(getProperty("CENTRAL_LOCAL_CONNECTION_PORT", PORTS));
+            strategy = new FullProcessingStrategy(SERVER_FILE_PATH + "\\RaidCentral");
+        }
     }
 }

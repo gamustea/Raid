@@ -27,6 +27,8 @@ public class Client {
     private ObjectInputStream clientIn;
     private static final String path = CLIENT_FILE_PATH;
 
+    private boolean noBoot = false;
+
 
     /**
      * Builds a client with the given parameters
@@ -34,9 +36,16 @@ public class Client {
      * @param port {@link Server} port
      */
     public Client(String host, int port) {
-        this.host = host;
-        this.port = port;
-        checkPathExistence(Path.of(path));
+        if (!(new File(CLIENT_FILE_PATH).exists())) {
+            System.out.println("THIS CLIENT WON'T BOOT - CHECK PATH EXISTENCE AND BUILD A NEW CLIENT OR EXECUTE AGAIN");
+            noBoot = true;
+            this.host = null;
+            this.port = 0;
+        } else {
+            this.host = host;
+            this.port = port;
+            checkPathExistence(Path.of(path));
+        }
     }
 
 
@@ -45,6 +54,10 @@ public class Client {
      * to introduce commands and a manual to read.
      */
     public void boot() {
+        if (noBoot) {
+            return;
+        }
+
         Socket s = null;
 
         try {
