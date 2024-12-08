@@ -58,9 +58,11 @@ public class ClientManagerThread extends Thread {
         super.start();
     }
 
+
     @Override
     public void run() {
         try {
+            String temporalPath = SERVER_FILE_PATH + "\\Auxiliar";
 
             // Abre streams para comunicarse con el cliente, usando su socket
             ObjectOutputStream serverOut = new ObjectOutputStream(clientSocket.getOutputStream());
@@ -80,7 +82,7 @@ public class ClientManagerThread extends Thread {
                         break;
                     }
                     case SAVE_FILE: {
-                        String temporalPath = SERVER_FILE_PATH + "\\Auxiliar";
+
                         checkPathExistence(Path.of(temporalPath));
                         File file = new File(temporalPath + "\\" + fileNameReceived);
                         if (!file.exists()) {
@@ -123,6 +125,7 @@ public class ClientManagerThread extends Thread {
                 // Mandar el resultado de la operación al cliente
                 serverOut.writeInt(message);
                 serverOut.flush();
+                deleteDirectory(new File(temporalPath));
                 command = serverIn.readInt();
             }
         }

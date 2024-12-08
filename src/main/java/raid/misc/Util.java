@@ -381,4 +381,23 @@ public abstract class Util {
             }
         }
     }
+
+
+    /**
+     * Deletes a {@link File}; if it's a directory, deletes all of its content
+     * and itself.
+     * @param fileToDelete File to delete.
+     */
+    public static void deleteDirectory(File fileToDelete) {
+        if (fileToDelete.exists()) {
+            for (File file : fileToDelete.listFiles()) {
+                if (file.isDirectory()) {
+                    deleteDirectory(file);
+                } else {
+                    file.delete();
+                }
+            }
+            fileToDelete.delete();
+        }
+    }
 }

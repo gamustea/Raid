@@ -1,6 +1,7 @@
 package raid.threads.localCommunication;
 
 import raid.misc.Util;
+import raid.servers.Server;
 import raid.servers.files.ProcessingStrategy;
 
 import java.io.*;
@@ -9,14 +10,30 @@ import java.net.Socket;
 
 import static raid.misc.Util.closeResource;
 
+
+/**
+ * This {@link Thread} instances are meant to run alongside the {@link Server} that
+ * instantiated its purpose is to hear for request from other servers, so that whenever
+ * a different instance of a server wants to retrieve an operation to this instance,
+ * there is always a Thread hearing. In that way, another server sends a request to perform
+ * and all the resources required to do so.
+ */
 public class LocalHearerThread extends Thread {
     private final int port;
     private final ProcessingStrategy strategy;
 
+
+    /**
+     * Builds a hearing thread in the given port and following a certain strategy,
+     * paired with the Server that instantiated it.
+     * @param port Port in which the thread will hear.
+     * @param strategy {@link ProcessingStrategy} of the server.
+     */
     public LocalHearerThread(int port, ProcessingStrategy strategy) {
         this.port = port;
         this.strategy = strategy;
     }
+
 
     @Override
     public void run() {
