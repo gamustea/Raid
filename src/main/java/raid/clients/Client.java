@@ -298,13 +298,14 @@ public class Client {
                 |   This software supports multiple instructions in order to manipulate your files, and they  |
                 | will be explained in the following lines:                                                   |
                 |                                                                                             |
-                |       · GET [FILE_NAME]: retrieves to the user the specified file with FILA_NAME name. Su-  |
+                |       · GET [FILE_NAME]: retrieves to the user the specified file with FILE_NAME name. Su-  |
                 |         ch file would be deposited in the specified properties file (most accurately, in    |
                 |         the path held by the variable "CLIENT_PATH") "resources/absoluteRoutes.propert-     |
                 |         ies".                                                                               |
                 |       · DELETE [FILE_NAME]: deletes an specified file from all servers named ass FILE_NAME  |
-                |       · SAVE [FILE_NAME]: saves in all servers the specified file (WARNING: it out to be an |
-                |         absolute route - otherwise, only files in the current project would be recognized)  |
+                |       · SAVE [FILE_NAME]: saves in all servers the specified file (WARNING: it ought to be  |
+                |         an absolute route - otherwise, only files in the current project would be           |
+                |         recognized)                                                                         |
                 |       · LIST: prints all the currently available files stored in servers.                   |
                 |                                                                                             |
                 |   Errors might happen if the "SERVER_PATH" in "resources/absoluteRoutes.properties" is not  |
@@ -313,7 +314,7 @@ public class Client {
                 | may occasional trouble.                                                                     |
                 |                                                                                             |
                 |=============================================================================================|
-                
+           
                 """);
     }
 }
