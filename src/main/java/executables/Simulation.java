@@ -3,14 +3,11 @@ package executables;
 import raid.clients.Client;
 import raid.servers.CentralServer;
 import raid.servers.EastServer;
-import raid.servers.Server;
 import raid.servers.WestServer;
 
 import static raid.misc.Util.*;
 
-import java.io.IOException;
-
-public class Main {
+public class Simulation {
     public static void main(String[] args) {
 
         ServerExecution se1 = new ServerExecution(new CentralServer());

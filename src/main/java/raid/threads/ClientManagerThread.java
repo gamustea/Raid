@@ -75,6 +75,7 @@ public class ClientManagerThread extends Thread {
 
                 // Filtra por el tipo de comando recibido y ejecuta el método correspondiente
                 int message = NOT_READY;
+                long start = System.currentTimeMillis();
                 switch(command) {
                     case GET_FILE: {
                         // Le devuelve al cliente el resultado de la operación de obtención
@@ -120,6 +121,8 @@ public class ClientManagerThread extends Thread {
                         serverOut.writeObject(result.result2());
                     }
                 }
+                long finish = System.currentTimeMillis();
+                System.out.println("Time spent: " + (finish - start) / 1000 + "s");
 
                 // Mandar el resultado de la operación al cliente
                 serverOut.writeInt(message);

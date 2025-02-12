@@ -9,7 +9,7 @@ import static raid.servers.files.StrategyType.West;
  * Instance of {@link Server}. Follows a {@link PartialProcessingStrategy},
  * and it's meant to treat files as a partial block, so that it stores half of the
  * file. It'll communicate
- * with the peripheral {@code Servers} (West and Central Servers).
+ * with the peripheral {@code Servers} (East and Central Servers).
  */
 public class WestServer extends Server {
     public WestServer() {

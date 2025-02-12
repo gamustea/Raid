@@ -104,6 +104,22 @@ public abstract class Util {
 
 
     /**
+     * Checks whether the given object is potentially closable and, in
+     * that case, tries to close it. Otherwise, won't do anything.
+     * @param closableResource {@link AutoCloseable} to close
+     */
+    public static void closeResource(AutoCloseable closableResource) {
+        if (closableResource != null) {
+            try {
+                closableResource.close();
+            } catch (Exception e) {
+                System.out.println("| ERROR WHILE CLOSING RESOURCE " + closableResource + "|");
+            }
+        }
+    }
+
+
+    /**
      * Searches an attribute in the given properties file.
      * @param key Attribute to search
      * @param propertiesFile Name of the properties file
